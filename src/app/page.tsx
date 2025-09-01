@@ -27,6 +27,8 @@ export default function Dashboard() {
   // Confirmation modal
   const [confirmMessage, setConfirmMessage] = useState("");
   const [confirmAction, setConfirmAction] = useState<() => void>(() => {});
+  
+  
 
   // Fetch sales
   const fetchSales = async () => {

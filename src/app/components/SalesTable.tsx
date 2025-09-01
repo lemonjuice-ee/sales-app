@@ -1,6 +1,9 @@
 "use client";
 
 import { useState, useMemo } from "react";
+import { ArrowUpNarrowWide,ArrowDownNarrowWide } from "lucide-react"
+import { Search } from "lucide-react"
+
 
 type Sale = {
   id: number;
@@ -67,80 +70,78 @@ export default function SalesTable({ sales, onDelete, onAddNew, onEdit }: SalesT
         </button>
       </div>
 
-      {/* Filter & Sort Controls */}
-      <div className="flex flex-col sm:flex-row items-center justify-between mb-4 gap-2 flex-wrap">
-        {/* Search */}
-        <div className="flex flex-col sm:flex-row items-center gap-2">
-          <label htmlFor="searchCustomer" className="sr-only">
-            Search by customer
-          </label>
-          <input
-            id="searchCustomer"
-            type="text"
-            placeholder="Search by customer"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="px-3 py-2 border rounded-lg w-full sm:w-64"
-          />
-        </div>
+{/* Filter & Sort Controls */}
+<div className="flex flex-col sm:flex-row items-center justify-between mb-4 gap-2 flex-wrap">
+  {/* Search */}
+  <div className="flex items-center gap-2 border border-gray-300 rounded-lg px-2 py-1 w-full sm:w-64 bg-white">
+    <Search className="w-5 h-5 text-gray-400" />
+    <input
+      type="text"
+      placeholder="Search Name"
+      value={search}
+      onChange={(e) => setSearch(e.target.value)}
+      className="flex-1 outline-none px-1 text-sm text-gray-700"
+    />
+  </div>
 
-        {/* Date filters */}
-        <div className="flex gap-2 items-center">
-          <label htmlFor="startDate" className="text-gray-700 text-sm">
-            From:
-          </label>
-          <input
-            id="startDate"
-            type="date"
-            value={startDate}
-            onChange={(e) => setStartDate(e.target.value)}
-            className="px-2 py-1 border rounded-lg"
-            aria-label="Start date"
-          />
-          <label htmlFor="endDate" className="text-gray-700 text-sm">
-            To:
-          </label>
-          <input
-            id="endDate"
-            type="date"
-            value={endDate}
-            onChange={(e) => setEndDate(e.target.value)}
-            className="px-2 py-1 border rounded-lg"
-            aria-label="End date"
-          />
-        </div>
+  {/* Date filters + Sort */}
+  <div className="flex gap-2 items-center flex-wrap">
+    {/* Date filters */}
+    <label htmlFor="startDate" className="text-gray-700 text-sm">From:</label>
+    <input
+      id="startDate"
+      type="date"
+      value={startDate}
+      onChange={(e) => setStartDate(e.target.value)}
+      className="px-2 py-1 border border-gray-300 rounded-lg"
+      aria-label="Start date"
+    />
+    <label htmlFor="endDate" className="text-gray-700 text-sm">To:</label>
+    <input
+      id="endDate"
+      type="date"
+      value={endDate}
+      onChange={(e) => setEndDate(e.target.value)}
+      className="px-2 py-1 border border-gray-300 rounded-lg"
+      aria-label="End date"
+    />
 
-        {/* Sort */}
-        <div className="flex gap-2 items-center">
-          <label htmlFor="sortField" className="sr-only">Sort by field</label>
-          <select
-            id="sortField"
-            value={sortField}
-            onChange={(e) => setSortField(e.target.value as keyof Pick<Sale, "amount" | "createdAt" | "customer">)}
-            className="px-2 py-1 border rounded-lg"
-            aria-label="Sort by field"
-          >
-            <option value="createdAt">Date</option>
-            <option value="amount">Amount</option>
-            <option value="customer">Customer</option>
-          </select>
-          <button
-            type="button"
-            aria-label="Toggle sort order"
-            onClick={() => setSortOrder(sortOrder === "asc" ? "desc" : "asc")}
-            className="px-3 py-1 border rounded-lg text-gray-700 hover:bg-gray-100 transition"
-          >
-            {sortOrder === "asc" ? "↑" : "↓"}
-          </button>
-        </div>
-      </div>
+    {/* Sort */}
+    <label htmlFor="sortField" className="text-gray-700 text-sm ml-5">Sort by:</label>
+    <select
+      id="sortField"
+      value={sortField}
+      onChange={(e) =>
+        setSortField(e.target.value as keyof Pick<Sale, "amount" | "createdAt" | "customer">)
+      }
+      className="px-2 py-1 border border-gray-300 rounded-lg"
+      aria-label="Sort by field"
+    >
+      <option value="createdAt">Date</option>
+      <option value="amount">Amount</option>
+      <option value="customer">Customer</option>
+    </select>
+    <button
+      type="button"
+      aria-label="Toggle sort order"
+      onClick={() => setSortOrder(sortOrder === "asc" ? "desc" : "asc")}
+      className="px-3 py-1 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-200 transition flex items-center justify-center"
+    >
+      {sortOrder === "asc" ? (
+        <ArrowUpNarrowWide className="w-6 h-6" />
+      ) : (
+        <ArrowDownNarrowWide className="w-6 h-6" />
+      )}
+    </button>
+  </div>
+</div>
 
       {/* Table headers */}
       <div className="grid grid-cols-3 sm:grid-cols-4 bg-blue-500 p-4 sm:p-6 rounded-t-xl text-white font-semibold text-sm sm:text-base">
         <div>Customer</div>
         <div>Amount</div>
         <div>Date & Time</div>
-        <div className="text-right sm:text-center">Actions</div>
+        <div className="text-right sm:text-center"></div>
       </div>
 
       {/* Table body */}

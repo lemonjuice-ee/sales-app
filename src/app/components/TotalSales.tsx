@@ -9,7 +9,7 @@ export default function TotalSales({ sales = [] }: TotalSalesProps) {
   const total = sales.reduce((sum, sale) => sum + (sale.amount || 0), 0);
 
   return (
-    <div className="bg-white shadow-md rounded-xl p-4 flex items-center justify-between mb-6">
+    <div className="bg-white shadow-md rounded-xl p-4 flex items-center justify-between mb-6 mx-4 my-6">
       <div>
         <h2 className="text-lg font-medium text-gray-600">Total Sales</h2>
         <p className="text-2xl font-bold text-gray-800">

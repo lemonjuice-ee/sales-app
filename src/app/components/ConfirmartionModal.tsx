@@ -1,5 +1,7 @@
 "use client";
 
+import { useEffect } from "react";
+
 type ConfirmationModalProps = {
   message: string;
   onConfirm: () => void;
@@ -19,6 +21,22 @@ export default function ConfirmationModal({
     type === "delete"
       ? "px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
       : "px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700";
+
+  // Handle Enter key
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        onConfirm();
+      } else if (e.key === "Escape") {
+        e.preventDefault();
+        onCancel();
+      }
+    };
+
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [onConfirm, onCancel]);
 
   return (
     <div
