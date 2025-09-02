@@ -341,33 +341,41 @@ export default function Dashboard() {
     <div className="flex min-h-screen bg-gray-100">
       {/* Side Nav */}
 {/* Side Nav */}
-<aside className="w-64 bg-white  p-6 flex flex-col items-center gap-6">
+<aside className="w-64 bg-white p-6 flex flex-col items-center gap-6">
   <div className="flex flex-col items-center mb-6">
-    <Image src="/logo.png" alt="Logo" width={200} height={200} className="rounded-full" />
-    <h2 className="font-bold text-xl mt-2">Welcome Admin!</h2>
+    <Image
+      src="/logo.png"
+      alt="Logo"
+      width={200}
+      height={200}
+      className="rounded-full"
+    />
+    <h2 className="font-bold text-xl mt-2 text-black">Welcome Admin!</h2>
   </div>
-{[
-  { view: "sales", label: "Sales", icon: <CreditCard className="mr-2" /> },
-  { view: "customers", label: "Customers", icon: <Users className="mr-2" /> },
-  { view: "products", label: "Products", icon: <Box className="mr-2" /> },
-  { view: "users", label: "Users", icon: <Home className="mr-2" /> },
-].map(({ view, label, icon }) => (
-  <button
-    key={view}
-    className={`
-      w-full flex items-center mb-4 transition 
-      ${activeView === view 
-        ? "bg-blue-500 text-white px-6 py-4 rounded-2xl " 
-        : "hover:bg-gray-100 px-4 py-3 rounded-lg"}
-    `}
-    onClick={() => setActiveView(view as any)}
-  >
-    {icon}
-    <span className="font-medium">{label}</span>
-  </button>
-))}
-</aside>
 
+  {[
+    { view: "sales", label: "Sales", icon: <CreditCard className="mr-2" /> },
+    { view: "customers", label: "Customers", icon: <Users className="mr-2" /> },
+    { view: "products", label: "Products", icon: <Box className="mr-2" /> },
+    { view: "users", label: "Users", icon: <Home className="mr-2" /> },
+  ].map(({ view, label, icon }) => (
+    <button
+      key={view}
+      className={`
+        w-full flex items-center mb-4 transition
+        ${
+          activeView === view
+            ? "bg-blue-500 text-white px-6 py-4 rounded-2xl"
+            : "text-blue-500 hover:bg-gray-100 px-4 py-3 rounded-lg"
+        }
+      `}
+      onClick={() => setActiveView(view as any)}
+    >
+      {icon}
+      <span className="font-medium">{label}</span>
+    </button>
+  ))}
+</aside>
       {/* Main Content */}
       <main className="flex-1 p-6 bg-gray-200 rounded-l-4xl">{renderContent()}</main>
 

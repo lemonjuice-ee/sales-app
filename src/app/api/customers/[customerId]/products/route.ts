@@ -1,13 +1,15 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
 // GET /api/customers/:customerId/products
 export async function GET(
-  request: Request,
-  { params }: { params: { customerId: string } }
+  request: NextRequest,
+  { params }: { params: Promise<{ customerId: string }> }
 ) {
-  const customerId = parseInt(params.customerId, 10);
-  if (isNaN(customerId)) {
+  const { customerId } = await params;
+  const customerIdNum = parseInt(customerId, 10);
+
+  if (isNaN(customerIdNum)) {
     return NextResponse.json({ error: "Invalid customer ID" }, { status: 400 });
   }
 
@@ -15,7 +17,7 @@ export async function GET(
     const products = await prisma.product.findMany({
       include: {
         productPrices: {
-          where: { customerId },
+          where: { customerId: customerIdNum },
           select: { pricePerKilo: true },
         },
       },
@@ -28,7 +30,7 @@ export async function GET(
       pricePerKilo: p.productPrices[0]?.pricePerKilo ?? p.capitalPerKilo,
     }));
 
-    return NextResponse.json(formatted);
+    return NextResponse.json(formatted); // ✅ always an array
   } catch (error) {
     console.error("Failed to fetch products:", error);
     return NextResponse.json({ error: "Failed to fetch products" }, { status: 500 });
@@ -37,18 +39,19 @@ export async function GET(
 
 // PUT /api/customers/:customerId/products
 export async function PUT(
-  request: Request,
-  { params }: { params: { customerId: string } }
+  request: NextRequest,
+  { params }: { params: Promise<{ customerId: string }> }
 ) {
-  const customerId = parseInt(params.customerId, 10);
-  if (isNaN(customerId)) {
+  const { customerId } = await params;
+  const customerIdNum = parseInt(customerId, 10);
+
+  if (isNaN(customerIdNum)) {
     return NextResponse.json({ error: "Invalid customer ID" }, { status: 400 });
   }
 
   try {
     const body = await request.json(); // Expected format: { [productId]: pricePerKilo, ... }
 
-    // Loop through each product and upsert price for the customer
     const updates = await Promise.all(
       Object.entries(body).map(async ([productIdStr, price]) => {
         const productId = parseInt(productIdStr, 10);
@@ -57,9 +60,9 @@ export async function PUT(
         if (isNaN(productId) || isNaN(pricePerKilo)) return null;
 
         return prisma.customerProduct.upsert({
-          where: { customerId_productId: { customerId, productId } },
+          where: { customerId_productId: { customerId: customerIdNum, productId } },
           update: { pricePerKilo },
-          create: { customerId, productId, pricePerKilo },
+          create: { customerId: customerIdNum, productId, pricePerKilo },
         });
       })
     );

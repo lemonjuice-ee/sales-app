@@ -26,10 +26,6 @@ export default function SalesTable({ sales, onDelete, onAddNew, onEdit }: SalesT
   const [startDate, setStartDate] = useState<string>("");
   const [endDate, setEndDate] = useState<string>("");
   const [sortField, setSortField] = useState<keyof Pick<Sale, "amount" | "createdAt" | "customer">>("createdAt");
-  const [showSaleModal, setShowSaleModal] = useState(false);
-
-const handleAddNewSale = () => setShowSaleModal(true);
-
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
 
   const filteredSales = useMemo(() => {
@@ -70,14 +66,14 @@ const handleAddNewSale = () => setShowSaleModal(true);
           onClick={onAddNew}
           className="px-5 py-3 bg-blue-600 text-white rounded-lg font-bold hover:bg-blue-700 transition-colors text-sm sm:text-base"
         >
-          + Add Sale
+          + New Sale
         </button>
       </div>
 
 {/* Filter & Sort Controls */}
 <div className="flex flex-col sm:flex-row items-center justify-between mb-4 gap-2 flex-wrap">
   {/* Search */}
-  <div className="flex items-center gap-2 border border-gray-300 rounded-lg px-2 py-1 w-full sm:w-64 bg-white">
+  <div className="flex items-center gap-2 border rounded-lg px-2 py-1 w-full sm:w-64 bg-white">
     <Search className="w-5 h-5 text-gray-400" />
     <input
       type="text"
@@ -97,7 +93,7 @@ const handleAddNewSale = () => setShowSaleModal(true);
       type="date"
       value={startDate}
       onChange={(e) => setStartDate(e.target.value)}
-      className="px-2 py-1 border border-gray-300 rounded-lg"
+      className="px-2 py-1 border bg-white rounded-lg text-gray-400"
       aria-label="Start date"
     />
     <label htmlFor="endDate" className="text-gray-700 text-sm">To:</label>
@@ -106,7 +102,7 @@ const handleAddNewSale = () => setShowSaleModal(true);
       type="date"
       value={endDate}
       onChange={(e) => setEndDate(e.target.value)}
-      className="px-2 py-1 border border-gray-300 rounded-lg"
+      className="px-2 py-1 border bg-white rounded-lg text-gray-400"
       aria-label="End date"
     />
 
@@ -118,7 +114,7 @@ const handleAddNewSale = () => setShowSaleModal(true);
       onChange={(e) =>
         setSortField(e.target.value as keyof Pick<Sale, "amount" | "createdAt" | "customer">)
       }
-      className="px-2 py-1 border border-gray-300 rounded-lg"
+      className="px-2 py-1 border bg-white rounded-lg text-gray-600"
       aria-label="Sort by field"
     >
       <option value="createdAt">Date</option>

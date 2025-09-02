@@ -7,51 +7,55 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// Existing User model 
-model User {
-  id    Int    @id @default(autoincrement())
-  name  String
-  email String @unique
-}
-
-// New Customer model
-model Customer {
-  id            Int                 @id @default(autoincrement())
-  name          String
-  email         String              @unique
-  productPrices CustomerProduct[]   // Customer-specific pricing
-  sales         Sale[]              // Sales made by this customer
-}
-
-// Products table
-model Product {
-  id            Int                 @id @default(autoincrement())
-  name          String
-  capitalPerKilo Float
-  productPrices CustomerProduct[]
-  sales         Sale[]
-}
-
-// Join table for customer-specific pricing
-model CustomerProduct {
+model Sale {
   id         Int      @id @default(autoincrement())
   customer   Customer @relation(fields: [customerId], references: [id])
   customerId Int
-  product    Product  @relation(fields: [productId], references: [id])
-  productId  Int
+  createdAt  DateTime @default(now())
+  total      Float
+
+  products SaleProduct[]
+}
+
+model SaleProduct {
+  id        Int     @id @default(autoincrement())
+  sale      Sale    @relation(fields: [saleId], references: [id])
+  saleId    Int
+  product   Product @relation(fields: [productId], references: [id])
+  productId Int
+  quantity  Float
+  price     Float
+}
+
+model Customer {
+  id            Int               @id @default(autoincrement())
+  name          String
+  email         String            @unique
+  productPrices CustomerProduct[] // Customer-specific pricing
+  sales         Sale[] // Sales made by this customer
+}
+
+model Product {
+  id             Int               @id @default(autoincrement())
+  name           String
+  capitalPerKilo Float
+  productPrices  CustomerProduct[]
+  sales          SaleProduct[]
+}
+
+model CustomerProduct {
+  id           Int      @id @default(autoincrement())
+  customer     Customer @relation(fields: [customerId], references: [id])
+  customerId   Int
+  product      Product  @relation(fields: [productId], references: [id])
+  productId    Int
   pricePerKilo Float
 
   @@unique([customerId, productId])
 }
 
-// Sales table
-model Sale {
-  id         Int       @id @default(autoincrement())
-  customer   Customer  @relation(fields: [customerId], references: [id])
-  customerId Int
-  product    Product   @relation(fields: [productId], references: [id])
-  productId  Int
-  amount     Float
-  salePrice  Float
-  createdAt  DateTime  @default(now())
+model User {
+  id    Int    @id @default(autoincrement())
+  name  String
+  email String @unique
 }
