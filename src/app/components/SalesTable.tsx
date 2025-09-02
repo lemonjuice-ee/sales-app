@@ -26,6 +26,10 @@ export default function SalesTable({ sales, onDelete, onAddNew, onEdit }: SalesT
   const [startDate, setStartDate] = useState<string>("");
   const [endDate, setEndDate] = useState<string>("");
   const [sortField, setSortField] = useState<keyof Pick<Sale, "amount" | "createdAt" | "customer">>("createdAt");
+  const [showSaleModal, setShowSaleModal] = useState(false);
+
+const handleAddNewSale = () => setShowSaleModal(true);
+
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
 
   const filteredSales = useMemo(() => {
@@ -66,7 +70,7 @@ export default function SalesTable({ sales, onDelete, onAddNew, onEdit }: SalesT
           onClick={onAddNew}
           className="px-5 py-3 bg-blue-600 text-white rounded-lg font-bold hover:bg-blue-700 transition-colors text-sm sm:text-base"
         >
-          + New Sale
+          + Add Sale
         </button>
       </div>
 
