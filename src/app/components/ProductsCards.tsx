@@ -16,35 +16,42 @@ type Props = {
   onAddNew: () => void;
 };
 
-// Map product names (lowercase) to image URLs
 // Map product names (normalized) to image URLs
 const PRODUCT_IMAGE_MAP: Record<string, string> = {
   suahe: "/suahe.png",
-  nylonshell: "/nylonshell.png", // no spaces in filename
+  nylonshell: "/nylonshell.png",
   alimasag: "/alimasag.png",
   halaan: "/halaan.png",
 };
 
-// Function to normalize strings: lowercase + remove spaces
+// Normalize product name (lowercase + remove spaces)
 const normalize = (str: string) => str.toLowerCase().replace(/\s+/g, "");
 
-// Function to get image URL for a product
+// Get image URL for a product
 const getImageForProduct = (product: Product) => {
   if (product.imageUrl) return product.imageUrl;
 
   const normalizedName = normalize(product.name);
-  const matchedKey = Object.keys(PRODUCT_IMAGE_MAP).find(
-    key => normalizedName.includes(key)
+  const matchedKey = Object.keys(PRODUCT_IMAGE_MAP).find((key) =>
+    normalizedName.includes(key)
   );
 
   return matchedKey ? PRODUCT_IMAGE_MAP[matchedKey] : "/logo.png";
 };
 
-export default function ProductsCards({ products, onEdit, onDelete, onAddNew }: Props) {
+export default function ProductsCards({
+  products,
+  onEdit,
+  onDelete,
+  onAddNew,
+}: Props) {
   return (
     <div className="flex flex-col gap-6 mx-6 mt-10">
-      {/* Add Product Button */}
-      <div className="flex justify-end mb-4">
+      {/* Header with title and add button */}
+      <div className="flex justify-between items-center mb-2">
+        <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-100">
+          Products
+        </h2>
         <button
           className="px-5 py-3 bg-blue-600 text-white rounded-lg font-bold hover:bg-blue-700 transition-colors text-sm sm:text-base"
           onClick={onAddNew}
@@ -58,11 +65,11 @@ export default function ProductsCards({ products, onEdit, onDelete, onAddNew }: 
         {products.map((product) => (
           <div
             key={product.id}
-            className="bg-white rounded-2xl shadow-lg p-5 flex flex-col justify-between hover:shadow-2xl transition duration-300"
+            className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-5 flex flex-col justify-between hover:shadow-2xl transition duration-300"
           >
-            {/* Image Slot */}
+            {/* Image */}
             <div className="mb-4 flex justify-center">
-              <div className="w-32 h-32 rounded-xl overflow-hidden bg-gray-100 flex items-center justify-center">
+              <div className="w-32 h-32 rounded-xl overflow-hidden bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
                 <img
                   src={getImageForProduct(product)}
                   alt={product.name}
@@ -73,10 +80,12 @@ export default function ProductsCards({ products, onEdit, onDelete, onAddNew }: 
 
             {/* Product Info */}
             <div className="mb-4 text-center">
-              <h3 className="text-xl font-bold text-gray-800 mb-2 truncate">{product.name}</h3>
-              <p className="text-gray-600">
+              <h3 className="text-xl font-bold text-gray-700 dark:text-gray-200 mb-2 truncate">
+                {product.name}
+              </h3>
+              <p className="text-gray-600 dark:text-gray-400">
                 Capital per kilo:{" "}
-                <span className="font-semibold text-gray-800">
+                <span className="font-semibold text-gray-500 dark:text-gray-300">
                   ₱{product.capitalPerKilo.toLocaleString()}
                 </span>
               </p>

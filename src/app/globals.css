@@ -3,7 +3,40 @@
 
 @custom-variant dark (&:is(.dark *));
 
-:root { /* Default text black */ --radius: 0.625rem; --background: oklch(1 0 0); --foreground: oklch(0.145 0 0); --card: oklch(1 0 0); --card-foreground: oklch(0.145 0 0); --popover: oklch(1 0 0); --popover-foreground: oklch(0.145 0 0); --primary: oklch(0.205 0 0); --primary-foreground: oklch(0.985 0 0); --secondary: oklch(0.97 0 0); --secondary-foreground: oklch(0.205 0 0); --muted: oklch(0.97 0 0); --muted-foreground: oklch(0.556 0 0); --accent: oklch(0.97 0 0); --accent-foreground: oklch(0.205 0 0); --destructive: oklch(0.577 0.245 27.325); --border: oklch(0.922 0 0); --input: oklch(0.922 0 0); --ring: oklch(0.708 0 0); --chart-1: oklch(0.646 0.222 41.116); --chart-2: oklch(0.6 0.118 184.704); --chart-3: oklch(0.398 0.07 227.392); --chart-4: oklch(0.828 0.189 84.429); --chart-5: oklch(0.769 0.188 70.08); --sidebar: oklch(0.985 0 0); --sidebar-foreground: oklch(0.145 0 0); --sidebar-primary: oklch(0.205 0 0); --sidebar-primary-foreground: oklch(0.985 0 0); --sidebar-accent: oklch(0.97 0 0); --sidebar-accent-foreground: oklch(0.205 0 0); --sidebar-border: oklch(0.922 0 0); --sidebar-ring: oklch(0.708 0 0);
+:root {
+  /* Default text black */
+  --radius: 0.625rem;
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.145 0 0);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.145 0 0);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.145 0 0);
+  --primary: oklch(0.205 0 0);
+  --primary-foreground: oklch(0.985 0 0);
+  --secondary: oklch(0.97 0 0);
+  --secondary-foreground: oklch(0.205 0 0);
+  --muted: oklch(0.97 0 0);
+  --muted-foreground: oklch(0.556 0 0);
+  --accent: oklch(0.97 0 0);
+  --accent-foreground: oklch(0.205 0 0);
+  --destructive: oklch(0.577 0.245 27.325);
+  --border: oklch(0.922 0 0);
+  --input: oklch(0.922 0 0);
+  --ring: oklch(0.708 0 0);
+  --chart-1: oklch(0.646 0.222 41.116);
+  --chart-2: oklch(0.6 0.118 184.704);
+  --chart-3: oklch(0.398 0.07 227.392);
+  --chart-4: oklch(0.828 0.189 84.429);
+  --chart-5: oklch(0.769 0.188 70.08);
+  --sidebar: oklch(0.985 0 0);
+  --sidebar-foreground: oklch(0.145 0 0);
+  --sidebar-primary: oklch(0.205 0 0);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.97 0 0);
+  --sidebar-accent-foreground: oklch(0.205 0 0);
+  --sidebar-border: oklch(0.922 0 0);
+  --sidebar-ring: oklch(0.708 0 0);
 }
 
 @theme inline {
@@ -46,14 +79,137 @@
   --radius-xl: calc(var(--radius) + 4px);
 }
 
-.dark { --background: oklch(0.145 0 0); --foreground: oklch(0.985 0 0); --card: oklch(0.205 0 0); --card-foreground: oklch(0.985 0 0); --popover: oklch(0.205 0 0); --popover-foreground: oklch(0.985 0 0); --primary: oklch(0.922 0 0); --primary-foreground: oklch(0.205 0 0); --secondary: oklch(0.269 0 0); --secondary-foreground: oklch(0.985 0 0); --muted: oklch(0.269 0 0); --muted-foreground: oklch(0.708 0 0); --accent: oklch(0.269 0 0); --accent-foreground: oklch(0.985 0 0); --destructive: oklch(0.704 0.191 22.216); --border: oklch(1 0 0 / 10%); --input: oklch(1 0 0 / 15%); --ring: oklch(0.556 0 0); --chart-1: oklch(0.488 0.243 264.376); --chart-2: oklch(0.696 0.17 162.48); --chart-3: oklch(0.769 0.188 70.08); --chart-4: oklch(0.627 0.265 303.9); --chart-5: oklch(0.645 0.246 16.439); --sidebar: oklch(0.205 0 0); --sidebar-foreground: oklch(0.985 0 0); --sidebar-primary: oklch(0.488 0.243 264.376); --sidebar-primary-foreground: oklch(0.985 0 0); --sidebar-accent: oklch(0.269 0 0); --sidebar-accent-foreground: oklch(0.985 0 0); --sidebar-border: oklch(1 0 0 / 10%); --sidebar-ring: oklch(0.556 0 0);
+.dark {
+  --background: oklch(0.12 0 0); /* deep black */
+  --foreground: oklch(0.97 0 0); /* near-white text */
+  --card: oklch(0.16 0 0);
+  --card-foreground: oklch(0.97 0 0);
+  --popover: oklch(0.16 0 0);
+  --popover-foreground: oklch(0.97 0 0);
+
+  --primary: oklch(0.82 0.15 260); /* soft indigo */
+  --primary-foreground: oklch(0.98 0 0);
+  --secondary: oklch(0.25 0 0); /* muted gray */
+  --secondary-foreground: oklch(0.97 0 0);
+
+  --muted: oklch(0.20 0 0);
+  --muted-foreground: oklch(0.70 0 0);
+
+  --accent: oklch(0.30 0.05 270); /* subtle violet tint */
+  --accent-foreground: oklch(0.97 0 0);
+
+  --destructive: oklch(0.62 0.20 30); /* darker red */
+  --border: oklch(0.18 0 0);
+  --input: oklch(0.20 0 0);
+  --ring: oklch(0.55 0.05 270);
+
+  /* Charts feel darker + modern */
+  --chart-1: oklch(0.50 0.20 264);
+  --chart-2: oklch(0.65 0.18 162);
+  --chart-3: oklch(0.72 0.16 70);
+  --chart-4: oklch(0.60 0.22 305);
+  --chart-5: oklch(0.62 0.21 25);
+
+  --sidebar: oklch(0.14 0 0);
+  --sidebar-foreground: oklch(0.97 0 0);
+  --sidebar-primary: oklch(0.55 0.18 260);
+  --sidebar-primary-foreground: oklch(0.98 0 0);
+  --sidebar-accent: oklch(0.25 0 0);
+  --sidebar-accent-foreground: oklch(0.97 0 0);
+  --sidebar-border: oklch(0.18 0 0);
+  --sidebar-ring: oklch(0.55 0.05 270);
 }
+
 
 @layer base {
   * {
     @apply border-border outline-ring/50;
- }
+  }
   body {
     @apply bg-background text-foreground;
- }
+  }
 }
+
+/* Existing animation */
+@keyframes scale-in {
+  0% { transform: scale(0.5); opacity: 0; }
+  80% { transform: scale(1.2); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+.animate-scale-in {
+  animation: scale-in 0.4s ease-out;
+}
+
+/* 🌟 New animation for splash screen */
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.animate-fade-in {
+  animation: fade-in 1s ease-in-out forwards;
+}
+/* Gentle pulse animation for bubbles */
+@keyframes bubble-pulse {
+  0%, 100% {
+    transform: scale(0.9);
+    opacity: 0.7;
+  }
+  50% {
+    transform: scale(1.1);
+    opacity: 1;
+  }
+}
+
+.bubble {
+  border-radius: 9999px;
+  border: 2px solid rgba(255, 255, 255, 0.9);
+  background: transparent;
+  animation: bubble-pulse 3s infinite ease-in-out;
+  margin: 4px;
+  display: inline-block;
+}
+
+.bubble-1 { width: 10px; height: 10px; animation-delay: 0s; }
+.bubble-2 { width: 14px; height: 14px; animation-delay: 0.3s; }
+.bubble-3 { width: 18px; height: 18px; animation-delay: 0.6s; }
+.bubble-4 { width: 12px; height: 12px; animation-delay: 0.9s; }
+.bubble-5 { width: 20px; height: 20px; animation-delay: 1.2s; }
+.bubble-6 { width: 16px; height: 16px; animation-delay: 1.5s; }
+.bubble-7 { width: 22px; height: 22px; animation-delay: 1.8s; }
+.bubble-8 { width: 13px; height: 13px; animation-delay: 2.1s; }
+.bubble-9 { width: 9px;  height: 9px;  animation-delay: 2.4s; }
+.bubble-10 { width: 17px; height: 17px; animation-delay: 2.7s; }
+
+
+@keyframes bubble-up {
+  0% {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(-200px) scale(1.2); /* rise a bit higher */
+    opacity: 0;
+  }
+}
+
+.bubble {
+  position: absolute;
+  bottom: 0;
+  border-radius: 9999px;
+  border: 2px solid rgba(255, 255, 255, 0.9);
+  background: transparent;
+  opacity: 1;
+}
+
+/* 🌊 Spread them out more (left %) + slower durations */
+.bubble-1  { width: 10px; height: 10px; left: 10%; animation: bubble-up 6s linear infinite; animation-delay: -1s; }
+.bubble-2  { width: 14px; height: 14px; left: 25%; animation: bubble-up 7s linear infinite; animation-delay: -2s; }
+.bubble-3  { width: 18px; height: 18px; left: 40%; animation: bubble-up 8s linear infinite; animation-delay: -3s; }
+.bubble-4  { width: 12px; height: 12px; left: 55%; animation: bubble-up 6.5s linear infinite; animation-delay: -1.5s; }
+.bubble-5  { width: 20px; height: 20px; left: 70%; animation: bubble-up 9s linear infinite; animation-delay: -4s; }
+.bubble-6  { width: 16px; height: 16px; left: 85%; animation: bubble-up 8.5s linear infinite; animation-delay: -2.5s; }
+.bubble-7  { width: 22px; height: 22px; left: 15%; animation: bubble-up 7.5s linear infinite; animation-delay: -3.2s; }
+.bubble-8  { width: 13px; height: 13px; left: 35%; animation: bubble-up 6.8s linear infinite; animation-delay: -1.8s; }
+.bubble-9  { width: 9px;  height: 9px;  left: 60%; animation: bubble-up 6.2s linear infinite; animation-delay: -0.7s; }
+.bubble-10 { width: 17px; height: 17px; left: 80%; animation: bubble-up 7.8s linear infinite; animation-delay: -2.7s; }
+

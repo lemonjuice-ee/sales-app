@@ -14,16 +14,24 @@ type Props = {
   onCancel: () => void;
 };
 
-export default function NewProductForm({ initialData, onRequestSave, onCancel }: Props) {
+export default function NewProductForm({
+  initialData,
+  onRequestSave,
+  onCancel,
+}: Props) {
   const [name, setName] = useState(initialData?.name || "");
   const [capitalPerKilo, setCapitalPerKilo] = useState<string>(
-    initialData?.capitalPerKilo !== undefined ? initialData.capitalPerKilo.toString() : ""
+    initialData?.capitalPerKilo !== undefined
+      ? initialData.capitalPerKilo.toString()
+      : ""
   );
 
   useEffect(() => {
     setName(initialData?.name || "");
     setCapitalPerKilo(
-      initialData?.capitalPerKilo !== undefined ? initialData.capitalPerKilo.toString() : ""
+      initialData?.capitalPerKilo !== undefined
+        ? initialData.capitalPerKilo.toString()
+        : ""
     );
   }, [initialData]);
 
@@ -42,12 +50,23 @@ export default function NewProductForm({ initialData, onRequestSave, onCancel }:
   };
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+    <form
+      onSubmit={handleSubmit}
+      className="bg-white dark:bg-gray-800 p-4 rounded-lg space-y-4 text-gray-900 dark:text-gray-100"
+    >
       <div>
-        <label className="block mb-1 font-medium">Product Name</label>
+        <label
+          htmlFor="name"
+          className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+        >
+          Product Name
+        </label>
         <input
+          id="name"
           type="text"
-          className="w-full border rounded px-3 py-2"
+          className="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-md p-2 
+                     bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 
+                     placeholder-gray-400 dark:placeholder-gray-500"
           value={name}
           onChange={(e) => setName(e.target.value)}
           placeholder="Enter product name"
@@ -56,10 +75,18 @@ export default function NewProductForm({ initialData, onRequestSave, onCancel }:
       </div>
 
       <div>
-        <label className="block mb-1 font-medium">Capital per Kilo</label>
+        <label
+          htmlFor="capitalPerKilo"
+          className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+        >
+          Capital per Kilo
+        </label>
         <input
+          id="capitalPerKilo"
           type="number"
-          className="w-full border rounded px-3 py-2"
+          className="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-md p-2 
+                     bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 
+                     placeholder-gray-400 dark:placeholder-gray-500"
           value={capitalPerKilo}
           onChange={(e) => setCapitalPerKilo(e.target.value)}
           min={0}
@@ -69,17 +96,18 @@ export default function NewProductForm({ initialData, onRequestSave, onCancel }:
         />
       </div>
 
-      <div className="flex justify-end gap-2 mt-4">
+      <div className="flex justify-end gap-2">
         <button
           type="button"
-          className="px-4 py-2 rounded bg-gray-200 hover:bg-gray-300"
           onClick={onCancel}
+          className="px-4 py-2 bg-gray-300 dark:bg-gray-600 text-gray-900 dark:text-gray-100 
+                     rounded-md hover:bg-gray-400 dark:hover:bg-gray-500 transition"
         >
           Cancel
         </button>
         <button
           type="submit"
-          className="px-4 py-2 rounded bg-blue-500 text-white hover:bg-blue-600"
+          className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition"
         >
           {initialData ? "Update Product" : "Add Product"}
         </button>

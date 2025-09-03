@@ -29,7 +29,7 @@ export default function CustomersTable({ customers, onEdit, onDelete }: Customer
   const [editingPrices, setEditingPrices] = useState<Record<number, Record<number, string>>>({});
   const [sortField, setSortField] = useState<keyof Customer>("name");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
-  const [priceErrors, setPriceErrors] = useState<Record<number, Record<number, string>>>({}); // ✅ errors
+  const [priceErrors, setPriceErrors] = useState<Record<number, Record<number, string>>>({});
 
   const fetchProducts = async (customerId: number) => {
     try {
@@ -62,7 +62,6 @@ export default function CustomersTable({ customers, onEdit, onDelete }: Customer
     }
   };
 
-  // ✅ validate price
   const handlePriceChange = (customerId: number, productId: number, value: string) => {
     const product = customerProducts[customerId]?.find((p) => p.id === productId);
     const num = parseFloat(value);
@@ -85,7 +84,6 @@ export default function CustomersTable({ customers, onEdit, onDelete }: Customer
 
   const handleSavePrices = async (customerId: number) => {
     try {
-      // ✅ block saving if any errors exist
       const errors = priceErrors[customerId];
       if (errors && Object.values(errors).some((msg) => msg)) {
         toast.error("Please fix validation errors before saving.");
@@ -125,12 +123,14 @@ export default function CustomersTable({ customers, onEdit, onDelete }: Customer
     <div className="mx-4 sm:mx-6 mt-2">
       {/* Sort Controls */}
       <div className="flex items-center gap-2 mb-4 flex-wrap">
-        <label htmlFor="sortField" className="text-gray-700 text-sm">Sort by:</label>
+        <label htmlFor="sortField" className="text-gray-700 dark:text-gray-300 text-sm">
+          Sort by:
+        </label>
         <select
           id="sortField"
           value={sortField}
           onChange={(e) => setSortField(e.target.value as keyof Customer)}
-          className="px-2 py-1 border border-gray-300 rounded-lg"
+          className="px-2 py-1 border bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 border-gray-300 dark:border-gray-600 rounded-lg"
         >
           <option value="name">Name</option>
           <option value="email">Email</option>
@@ -138,7 +138,7 @@ export default function CustomersTable({ customers, onEdit, onDelete }: Customer
         <button
           type="button"
           onClick={() => setSortOrder(sortOrder === "asc" ? "desc" : "asc")}
-          className="px-3 py-1 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-200 transition flex items-center justify-center"
+          className="px-3 py-1 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition flex items-center justify-center"
         >
           {sortOrder === "asc" ? <ArrowUpNarrowWide className="w-6 h-6" /> : <ArrowDownNarrowWide className="w-6 h-6" />}
         </button>
@@ -150,13 +150,19 @@ export default function CustomersTable({ customers, onEdit, onDelete }: Customer
           sortedCustomers.map((customer) => (
             <div
               key={customer.id}
-              className="bg-white shadow-sm rounded-xl p-4 sm:p-6 transition-colors duration-300 hover:shadow-lg"
+              className="bg-white dark:bg-gray-800 shadow-sm rounded-xl p-4 sm:p-6 transition-colors duration-300 hover:shadow-lg"
             >
               <div className="grid grid-cols-2 sm:grid-cols-4 items-center gap-2">
-                <span className="text-gray-800 font-bold truncate">{customer.name}</span>
-                <span className="text-gray-500 truncate">{customer.email}</span>
+                <span className="text-gray-800 dark:text-gray-100 font-bold truncate">{customer.name}</span>
+                <span className="text-gray-500 dark:text-gray-400 truncate">{customer.email}</span>
                 <button
-                  className="flex items-center justify-center gap-2 px-3 py-1 bg-purple-100 text-orange-600 rounded-lg font-medium hover:bg-orange-200 transition w-full sm:w-40"
+                 className="flex items-center justify-center gap-2 px-3 py-1 
+           bg-purple-200/70 dark:bg-orange-900/50 
+           text-orange-600 dark:text-orange-400 
+           rounded-lg font-medium 
+           hover:bg-orange-200/80 dark:hover:bg-orange-800/60 
+           transition w-full sm:w-40"
+
                   onClick={() => handleViewProducts(customer.id)}
                 >
                   <Shrimp className="w-5 h-5" />
@@ -184,29 +190,30 @@ export default function CustomersTable({ customers, onEdit, onDelete }: Customer
                   {customerProducts[customer.id].map((product) => (
                     <div
                       key={product.id}
-                      className="bg-gray-50 p-4 sm:p-5 rounded-xl shadow-sm hover:shadow-md transition flex flex-col sm:flex-row sm:items-center gap-4"
+                      className="bg-gray-50 dark:bg-gray-700 p-4 sm:p-5 rounded-xl shadow-sm hover:shadow-md transition flex flex-col sm:flex-row sm:items-center gap-4"
                     >
                       <div className="flex-1">
-                        <h4 className="font-semibold text-gray-800 text-sm sm:text-base">{product.name}</h4>
-                        <p className="text-gray-500 text-sm sm:text-base mt-1">
+                        <h4 className="font-semibold text-gray-800 dark:text-gray-100 text-sm sm:text-base">{product.name}</h4>
+                        <p className="text-gray-500 dark:text-gray-400 text-sm sm:text-base mt-1">
                           Capital: ₱{product.capitalPerKilo.toLocaleString()}
                         </p>
                       </div>
                       <div className="w-full sm:w-40 flex flex-col mt-2 sm:mt-0">
                         <label
                           htmlFor={`price-${customer.id}-${product.id}`}
-                          className="text-gray-700 font-medium mb-1 text-sm"
+                          className="text-gray-700 dark:text-gray-300 font-medium mb-1 text-sm"
                         >
                           Retail Price
                         </label>
                         <input
                           id={`price-${customer.id}-${product.id}`}
                           type="number"
-                          className={`border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 ${
-                            priceErrors[customer.id]?.[product.id]
-                              ? "border-red-500 focus:ring-red-400"
-                              : "border-gray-300 focus:ring-blue-400"
-                          }`}
+                          className={`border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100
+                            ${
+                              priceErrors[customer.id]?.[product.id]
+                                ? "border-red-500 focus:ring-red-400"
+                                : "border-gray-300 dark:border-gray-600 focus:ring-blue-400"
+                            }`}
                           placeholder="₱ Enter price"
                           value={editingPrices[customer.id][product.id]}
                           onChange={(e) => handlePriceChange(customer.id, product.id, e.target.value)}
@@ -230,7 +237,7 @@ export default function CustomersTable({ customers, onEdit, onDelete }: Customer
             </div>
           ))
         ) : (
-          <div className="text-center text-gray-500 py-8 bg-white rounded-b-xl shadow-md col-span-2">
+          <div className="text-center text-gray-500 dark:text-gray-400 py-8 bg-white dark:bg-gray-800 rounded-b-xl shadow-md col-span-2">
             No customers found
           </div>
         )}
