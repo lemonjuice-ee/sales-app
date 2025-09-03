@@ -1,191 +1,376 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { ArrowUpNarrowWide, ArrowDownNarrowWide, Search } from "lucide-react";
+import { format } from "date-fns";
+import {
+  Pencil,
+  Trash2,
+  Search,
+  ArrowUp,
+  ArrowDown,
+  ChevronDown,
+  ChevronUp,
+  ChevronsDown,
+  ChevronsUp,
+} from "lucide-react";
+import { Eye, EyeClosed } from "lucide-react";
+
+import React from "react";
+
+type Customer = {
+  id: number;
+  name: string;
+  email: string;
+};
+
+type Product = {
+  id: number;
+  name: string;
+  capitalPerKilo: number;
+};
+
+type SaleProduct = {
+  id: number;
+  product: Product;
+  quantity: number;
+  price: number;
+};
 
 type Sale = {
   id: number;
-  customer: string;
-  amount: number;
+  customer: Customer;
   createdAt: string;
-  status?: string;
+  total: number;
+  products: SaleProduct[];
 };
 
-type SalesTableProps = {
+type Props = {
   sales: Sale[];
-  onDelete: (id: number) => void;
-  onAddNew: () => void;
   onEdit: (sale: Sale) => void;
+  onDelete: (id: number) => void;
 };
 
-export default function SalesTable({ sales, onDelete, onAddNew, onEdit }: SalesTableProps) {
+export default function SalesTable({ sales, onEdit, onDelete }: Props) {
   const [search, setSearch] = useState("");
-  const [startDate, setStartDate] = useState<string>("");
-  const [endDate, setEndDate] = useState<string>("");
-  const [sortField, setSortField] = useState<keyof Pick<Sale, "amount" | "createdAt" | "customer">>("createdAt");
+  const [filter, setFilter] = useState<"all" | "today" | "week" | "month">(
+    "all"
+  );
+  const [sortKey, setSortKey] = useState<"date" | "total">("date");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
+   const [visible, setVisible] = useState(true);
+
+  const [expandedRows, setExpandedRows] = useState<number[]>([]);
+
+    const toggleRow = (id: number) => {
+    setExpandedRows((prev) =>
+      prev.includes(id) ? prev.filter((rowId) => rowId !== id) : [...prev, id]
+    );
+  };
 
   const filteredSales = useMemo(() => {
-    return sales
-      .filter((sale) => sale.customer.toLowerCase().includes(search.toLowerCase()))
-      .filter((sale) => {
-        const saleDate = new Date(sale.createdAt).setHours(0, 0, 0, 0);
-        const start = startDate ? new Date(startDate).getTime() : null;
-        const end = endDate ? new Date(endDate).getTime() : null;
-        if (start && saleDate < start) return false;
-        if (end && saleDate > end) return false;
-        return true;
-      })
-      .sort((a, b) => {
-        let valA: string | number, valB: string | number;
-        if (sortField === "amount") {
-          valA = a.amount;
-          valB = b.amount;
-        } else if (sortField === "createdAt") {
-          valA = new Date(a.createdAt).getTime();
-          valB = new Date(b.createdAt).getTime();
-        } else {
-          valA = a.customer.toLowerCase();
-          valB = b.customer.toLowerCase();
-        }
-        if (valA < valB) return sortOrder === "asc" ? -1 : 1;
-        if (valA > valB) return sortOrder === "asc" ? 1 : -1;
-        return 0;
-      });
-  }, [sales, search, startDate, endDate, sortField, sortOrder]);
+    let data = [...sales];
+
+    if (search.trim()) {
+      const q = search.toLowerCase();
+      data = data.filter(
+        (sale) =>
+          sale.customer?.name.toLowerCase().includes(q) ||
+          sale.products.some((p) =>
+            p.product.name.toLowerCase().includes(q)
+          )
+      );
+    }
+
+    const now = new Date();
+    if (filter === "today") {
+      data = data.filter(
+        (sale) =>
+          new Date(sale.createdAt).toDateString() === now.toDateString()
+      );
+    } else if (filter === "week") {
+      const start = new Date(now);
+      start.setDate(now.getDate() - 7);
+      data = data.filter((sale) => new Date(sale.createdAt) >= start);
+    } else if (filter === "month") {
+      const start = new Date(now.getFullYear(), now.getMonth(), 1);
+      data = data.filter((sale) => new Date(sale.createdAt) >= start);
+    }
+
+    data.sort((a, b) => {
+      if (sortKey === "date") {
+        const diff =
+          new Date(a.createdAt).getTime() -
+          new Date(b.createdAt).getTime();
+        return sortOrder === "asc" ? diff : -diff;
+      } else {
+        const diff = a.total - b.total;
+        return sortOrder === "asc" ? diff : -diff;
+      }
+    });
+
+
+
+    return data;
+  }, [sales, search, filter, sortKey, sortOrder]);
+  
+  const totalSales = useMemo(() => {
+  return filteredSales.reduce((sum, sale) => sum + sale.total, 0);
+}, [filteredSales]);
+
+const totalProfit = useMemo(() => {
+  return filteredSales.reduce(
+    (sum, sale) =>
+      sum +
+      sale.products.reduce(
+        (pSum, sp) => pSum + (sp.price - sp.product.capitalPerKilo) * sp.quantity,
+        0
+      ),
+    0
+  );
+}, [filteredSales]);
+
+  const toggleVisibility = () => {
+    setVisible((prev) => !prev);
+  };
+const displayValue = (value: number) => {
+  const formatted = `₱${value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  return visible ? (
+    formatted
+  ) : (
+    <span className="inline-block filter blur-sm select-none">{formatted}</span>
+  );
+};
+
+const retractAllRows = () => {
+  setExpandedRows([]); // clear all expanded rows
+};
 
   return (
-    <div className="mx-4 sm:mx-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-center mb-4 gap-4">
-        <h2 className="text-2xl font-semibold text-gray-800 dark:text-gray-100">Sales</h2>
-        <button
-          onClick={onAddNew}
-          className="px-5 py-3 bg-blue-600 text-white rounded-lg font-bold hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 transition-colors text-sm sm:text-base"
-        >
-          + New Sale
-        </button>
-      </div>
+    <div className="mt-10">
+      {/* Controls Row */}
+<div className="flex flex-col sm:flex-row justify-between items-end gap-4 mb-6">
+  {/* Search */}
+  <div className="relative w-full sm:w-64">
+    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 w-5 h-5" />
+    <input
+      type="text"
+      placeholder="Search sales..."
+      value={search}
+      onChange={(e) => setSearch(e.target.value)}
+      className="pl-10 pr-4 py-2 border rounded-full bg-white dark:bg-gray-800 dark:border-gray-600 w-full focus:ring-2 focus:ring-blue-500 focus:outline-none border-gray-300"
+    />
+  </div>
 
-      {/* Filter & Sort Controls */}
-      <div className="flex flex-col sm:flex-row items-center justify-between mb-4 gap-2 flex-wrap">
-        {/* Search */}
-        <div className="flex items-center gap-2 border rounded-lg px-2 py-1 w-full sm:w-64 bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-700">
-          <Search className="w-5 h-5 text-gray-400 dark:text-gray-500" />
-          <input
-            type="text"
-            placeholder="Search Name"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="flex-1 outline-none px-1 text-sm text-gray-700 dark:text-gray-200 bg-transparent"
-          />
-        </div>
+  {/* Filters + Sort + Total */}
+  <div className="flex flex-col sm:flex-row items-end gap-3">
+    <select
+      value={filter}
+      onChange={(e) => setFilter(e.target.value as any)}
+      aria-label="Filter sales by date"
+      className="px-3 py-2 border rounded-md dark:bg-gray-800 dark:border-gray-600 text-sm bg-white border-gray-300"
+    >
+      <option value="all">All</option>
+      <option value="today">Today</option>
+      <option value="week">This Week</option>
+      <option value="month">This Month</option>
+    </select>
 
-        {/* Date filters + Sort */}
-        <div className="flex gap-2 items-center flex-wrap">
-          <label htmlFor="startDate" className="text-gray-700 dark:text-gray-300 text-sm">
-            From:
-          </label>
-          <input
-            id="startDate"
-            type="date"
-            value={startDate}
-            onChange={(e) => setStartDate(e.target.value)}
-            className="px-2 py-1 border rounded-lg text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-700"
-            aria-label="Start date"
-          />
-          <label htmlFor="endDate" className="text-gray-700 dark:text-gray-300 text-sm">
-            To:
-          </label>
-          <input
-            id="endDate"
-            type="date"
-            value={endDate}
-            onChange={(e) => setEndDate(e.target.value)}
-            className="px-2 py-1 border rounded-lg text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-700"
-            aria-label="End date"
-          />
+    <select
+      value={sortKey}
+      onChange={(e) => setSortKey(e.target.value as any)}
+      aria-label="Sort sales"
+      className="px-3 py-2 border rounded-md dark:bg-gray-800 dark:border-gray-600 text-sm bg-white border-gray-300"
+    >
+      <option value="date">Sort by Date</option>
+      <option value="total">Sort by Total</option>
+    </select>
 
-          {/* Sort */}
-          <label htmlFor="sortField" className="text-gray-700 dark:text-gray-300 text-sm ml-5">
-            Sort by:
-          </label>
-          <select
-            id="sortField"
-            value={sortField}
-            onChange={(e) =>
-              setSortField(e.target.value as keyof Pick<Sale, "amount" | "createdAt" | "customer">)
-            }
-            className="px-2 py-1 border rounded-lg text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-700"
-            aria-label="Sort by field"
+    <button
+      type="button"
+      onClick={() => setSortOrder(sortOrder === "asc" ? "desc" : "asc")}
+      className="p-3 border rounded-md dark:bg-gray-800 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 transition bg-white border-gray-300"
+    >
+      {sortOrder === "asc" ? (
+        <ArrowUp className="w-3.5 h-3.5" />
+      ) : (
+        <ArrowDown className="w-3.5 h-3.5" />
+      )}
+    </button>
+  </div>
+</div>
+      {/* Table */}
+<div className="overflow-x-auto rounded-2xl shadow-lg border border-gray-300 dark:border-gray-700 overflow-hidden">
+  <table className="min-w-full border-collapse text-sm">
+    <thead className="bg-blue-600 text-white sticky top-0 z-10">
+      <tr>
+        <th className="p-4 text-left font-semibold border-b border-gray-300 dark:border-gray-700">
+          Customer
+        </th>
+        <th className="p-4 text-left font-semibold border-b border-gray-300 dark:border-gray-700">
+          Date
+        </th>
+        <th className="p-4 text-left font-semibold border-b border-gray-300 dark:border-gray-700">
+          Total
+        </th>
+        <th className="p-4 text-left font-semibold border-b border-gray-300 dark:border-gray-700">
+          Profit
+        </th>
+        <th className="p-4 text-center font-semibold border-b border-gray-300 dark:border-gray-700">
+        </th>
+       <th className="p-4 text-center font-semibold border-b border-gray-300 dark:border-gray-700">
+  <div className="flex items-center justify-center gap-1">
+    <button
+      type="button"
+      onClick={() => setExpandedRows([])} // retract all rows
+      className="text-gray-300 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition"
+      aria-label="Toggle all rows"
+    >
+      {expandedRows.length <= 1 ? <ChevronsDown size={24} /> : <ChevronsUp size={24} />}
+    </button>
+  </div>
+</th>
+      </tr>
+    </thead>
+
+    <tbody>
+      {filteredSales.length === 0 ? (
+        <tr>
+          <td
+            colSpan={6}
+            className="text-center p-6 text-gray-500 dark:text-gray-300 border-b border-gray-300 dark:border-gray-700"
           >
-            <option value="createdAt">Date</option>
-            <option value="amount">Amount</option>
-            <option value="customer">Customer</option>
-          </select>
-          <button
-            type="button"
-            aria-label="Toggle sort order"
-            onClick={() => setSortOrder(sortOrder === "asc" ? "desc" : "asc")}
-            className="px-3 py-1 border rounded-lg text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700 transition flex items-center justify-center"
-          >
-            {sortOrder === "asc" ? (
-              <ArrowUpNarrowWide className="w-6 h-6" />
-            ) : (
-              <ArrowDownNarrowWide className="w-6 h-6" />
-            )}
-          </button>
-        </div>
-      </div>
-
-      {/* Table headers */}
-      <div className="grid grid-cols-3 sm:grid-cols-4 bg-blue-500 dark:bg-blue-600 p-4 sm:p-6 rounded-t-xl text-white font-semibold text-sm sm:text-base">
-        <div>Customer</div>
-        <div>Amount</div>
-        <div>Date & Time</div>
-        <div className="text-right sm:text-center"></div>
-      </div>
-
-      {/* Table body */}
-      <div className="flex flex-col gap-2">
-        {filteredSales.length > 0 ? (
-          filteredSales.map((sale) => (
-            <div
-              key={sale.id}
-              className="grid grid-cols-3 sm:grid-cols-4 items-center bg-white dark:bg-gray-800 shadow-sm rounded-xl p-4 sm:p-6 transition-colors duration-300 min-h-[70px] hover:shadow-lg"
+            No sales found.
+          </td>
+        </tr>
+      ) : (
+        filteredSales.map((sale, idx) => (
+          <React.Fragment key={sale.id}>
+            {/* Main Row */}
+            <tr
+              className={`${
+                idx % 2 === 0
+                  ? "bg-gray-200 dark:bg-gray-900/40"
+                  : "bg-gray-50 dark:bg-gray-800"
+              } hover:bg-blue-50 dark:hover:bg-gray-700 transition border-b border-gray-300 dark:border-gray-700`}
             >
-              <div className="text-gray-800 dark:text-gray-100 font-medium truncate">{sale.customer}</div>
-              <div className="text-gray-600 dark:text-gray-300 truncate">
-                ₱{Number(sale.amount).toLocaleString("en-PH")}
-              </div>
-              <div className="text-gray-500 dark:text-gray-400 text-sm sm:text-base truncate">
-                {new Date(sale.createdAt).toLocaleString("en-PH", {
-                  dateStyle: "medium",
-                  timeStyle: "short",
-                })}
-              </div>
-              <div className="flex gap-2 justify-end sm:justify-center mt-2 sm:mt-0 col-span-1 sm:col-span-1">
+              <td className="p-4 font-medium text-gray-900 dark:text-gray-100">
+                {sale.customer?.name}
+              </td>
+
+              <td className="p-4 text-gray-600 dark:text-gray-300">
+                {format(new Date(sale.createdAt), "PPpp")}
+              </td>
+
+              <td className="p-4 font-semibold text-blue-600 dark:text-blue-400">
+                ₱{sale.total.toFixed(2)}
+              </td>
+
+              <td className="p-4 font-semibold text-green-600 dark:text-green-400">
+                ₱
+                {sale.products
+                  .reduce(
+                    (sum, sp) =>
+                      sum + (sp.price - sp.product.capitalPerKilo) * sp.quantity,
+                    0
+                  )
+                  .toFixed(2)}
+              </td>
+
+              <td className="p-4 text-center flex items-center justify-center gap-3">
                 <button
+                  type="button"
                   onClick={() => onEdit(sale)}
-                  className="px-4 py-1 bg-green-500 text-white rounded-lg hover:bg-green-600 dark:bg-green-600 dark:hover:bg-green-700 transition-colors text-sm sm:text-base"
+                  className="px-4 py-1 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition text-sm sm:text-base"
                 >
                   Edit
                 </button>
                 <button
+                  type="button"
                   onClick={() => onDelete(sale.id)}
-                  className="px-4 py-1 bg-red-500 text-white rounded-lg hover:bg-red-600 dark:bg-red-600 dark:hover:bg-red-700 transition-colors text-sm sm:text-base"
+                  className="px-4 py-1 bg-red-500 text-white rounded-lg hover:bg-red-600 transition text-sm sm:text-base"
                 >
                   Delete
                 </button>
-              </div>
-            </div>
-          ))
-        ) : (
-          <div className="text-center text-gray-500 dark:text-gray-400 py-8 bg-white dark:bg-gray-800 rounded-b-xl shadow-md">
-            No sales found
-          </div>
-        )}
-      </div>
-    </div>
+              </td>
+
+              <td className="p-4 text-center">
+                <button
+                  type="button"
+                  onClick={() => toggleRow(sale.id)}
+                  className="text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition"
+                  aria-label={`${
+                    expandedRows.includes(sale.id) ? "Collapse" : "Expand"
+                  } products for ${sale.customer?.name}`}
+                >
+                  {expandedRows.includes(sale.id) ? (
+                    <ChevronUp size={18} />
+                  ) : (
+                    <ChevronDown size={18} />
+                  )}
+                </button>
+              </td>
+            </tr>
+
+            {/* Expanded Products Cards */}
+            {expandedRows.includes(sale.id) && (
+              <tr key={`${sale.id}-details`}>
+                <td colSpan={6} className="p-4 border-b border-gray-300 dark:border-gray-700">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                    {sale.products.map((sp) => (
+                      <div
+                        key={sp.id}
+                        className="bg-white dark:bg-gray-800 rounded-2xl shadow-md p-4 hover:shadow-lg transition flex flex-col justify-between border border-gray-200 dark:border-gray-700"
+                      >
+                        <div className="mb-2">
+                          <h5 className="text-gray-800 dark:text-gray-200 font-semibold text-lg truncate">
+                            {sp.product.name}
+                          </h5>
+                          <p className="text-gray-600 dark:text-gray-400 text-sm">
+                            Quantity: {sp.quantity} kg
+                          </p>
+                        </div>
+                        <div className="text-green-600 dark:text-green-400 font-semibold text-sm">
+                          ₱{sp.price.toFixed(2)}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </td>
+              </tr>
+            )}
+          </React.Fragment>
+        ))
+      )}
+    </tbody>
+  </table>      
+</div>
+{/* Total Sales & Profit */}
+    {/* Eye Icon */}
+<div className="fixed bottom-24 right-4 z-50">
+  <button
+    onClick={toggleVisibility}
+    className="p-2 bg-gray-100 dark:bg-gray-700 rounded-full hover:bg-gray-200 dark:hover:bg-gray-600 transition"
+    aria-label={visible ? "Mask totals" : "Show totals"}
+  >
+    {visible ? <Eye size={24} /> : <EyeClosed size={24} />}
+  </button>
+</div>
+
+{/* Totals */}
+<div className="fixed bottom-4 right-4 p-4 rounded-2xl bg-white dark:bg-gray-800 shadow-lg flex gap-8 z-50">
+  <p className="text-2xl font-semibold text-gray-800 dark:text-gray-100">
+    Total Sales:{" "}
+    <span className="text-blue-600 dark:text-blue-400">
+      {displayValue(totalSales)}
+    </span>
+  </p>
+  <p className="text-2xl font-semibold text-gray-800 dark:text-gray-100">
+    Total Profit:{" "}
+    <span className="text-green-600 dark:text-green-400">
+      {displayValue(totalProfit)}
+    </span>
+  </p>
+</div>
+  </div>
   );
 }

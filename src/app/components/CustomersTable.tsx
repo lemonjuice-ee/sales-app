@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { toast } from "react-hot-toast";
-import { ArrowUpNarrowWide, ArrowDownNarrowWide, Shrimp } from "lucide-react";
+import { ArrowUp, ArrowDown, Shrimp } from "lucide-react";
 
 type Customer = {
   id: number;
@@ -130,7 +130,7 @@ export default function CustomersTable({ customers, onEdit, onDelete }: Customer
           id="sortField"
           value={sortField}
           onChange={(e) => setSortField(e.target.value as keyof Customer)}
-          className="px-2 py-1 border bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 border-gray-300 dark:border-gray-600 rounded-lg"
+          className="px-2 py-1 border bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 border-gray-300 dark:border-gray-600 rounded-xl"
         >
           <option value="name">Name</option>
           <option value="email">Email</option>
@@ -138,9 +138,9 @@ export default function CustomersTable({ customers, onEdit, onDelete }: Customer
         <button
           type="button"
           onClick={() => setSortOrder(sortOrder === "asc" ? "desc" : "asc")}
-          className="px-3 py-1 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition flex items-center justify-center"
+          className="px-2 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 rounded-xl hover:bg-gray-200 dark:hover:bg-gray-700 transition flex items-center justify-center"
         >
-          {sortOrder === "asc" ? <ArrowUpNarrowWide className="w-6 h-6" /> : <ArrowDownNarrowWide className="w-6 h-6" />}
+          {sortOrder === "asc" ? <ArrowUp className="w-4 h-4" /> : <ArrowDown className="w-4 h-4" />}
         </button>
       </div>
 

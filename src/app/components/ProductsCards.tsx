@@ -56,7 +56,7 @@ export default function ProductsCards({
           className="px-5 py-3 bg-blue-600 text-white rounded-lg font-bold hover:bg-blue-700 transition-colors text-sm sm:text-base"
           onClick={onAddNew}
         >
-          + New Product
+          + Add Product
         </button>
       </div>
 
