@@ -57,15 +57,25 @@ export default function SalesTable({ sales, onEdit, onDelete }: Props) {
   );
   const [sortKey, setSortKey] = useState<"date" | "total">("date");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
-   const [visible, setVisible] = useState(true);
+   const [visible, setVisible] = useState(false);
 
   const [expandedRows, setExpandedRows] = useState<number[]>([]);
+    const [selectedCustomers, setSelectedCustomers] = useState<number[]>([]);
 
     const toggleRow = (id: number) => {
     setExpandedRows((prev) =>
       prev.includes(id) ? prev.filter((rowId) => rowId !== id) : [...prev, id]
     );
   };
+  
+    // Unique customers list for filter buttons
+  const uniqueCustomers = useMemo(() => {
+    const seen = new Map<number, string>();
+    sales.forEach((sale) => {
+      if (sale.customer) seen.set(sale.customer.id, sale.customer.name);
+    });
+    return Array.from(seen.entries()).map(([id, name]) => ({ id, name }));
+  }, [sales]);
 
   const filteredSales = useMemo(() => {
     let data = [...sales];
@@ -78,6 +88,13 @@ export default function SalesTable({ sales, onEdit, onDelete }: Props) {
           sale.products.some((p) =>
             p.product.name.toLowerCase().includes(q)
           )
+      );
+    }
+
+        // Apply customer filter (if selected)
+    if (selectedCustomers.length > 0) {
+      data = data.filter((sale) =>
+        selectedCustomers.includes(sale.customer?.id)
       );
     }
 
@@ -111,7 +128,7 @@ export default function SalesTable({ sales, onEdit, onDelete }: Props) {
 
 
     return data;
-  }, [sales, search, filter, sortKey, sortOrder]);
+  }, [sales, search, filter, sortKey, sortOrder,selectedCustomers]);
   
   const totalSales = useMemo(() => {
   return filteredSales.reduce((sum, sale) => sum + sale.total, 0);
@@ -141,28 +158,63 @@ const displayValue = (value: number) => {
   );
 };
 
+  const toggleCustomer = (id: number) => {
+    setSelectedCustomers((prev) =>
+      prev.includes(id) ? prev.filter((cid) => cid !== id) : [...prev, id]
+    );
+  };
+
 const retractAllRows = () => {
   setExpandedRows([]); // clear all expanded rows
 };
 
   return (
     <div className="mt-10">
-      {/* Controls Row */}
-<div className="flex flex-col sm:flex-row justify-between items-end gap-4 mb-6">
-  {/* Search */}
-  <div className="relative w-full sm:w-64">
-    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 w-5 h-5" />
-    <input
-      type="text"
-      placeholder="Search sales..."
-      value={search}
-      onChange={(e) => setSearch(e.target.value)}
-      className="pl-10 pr-4 py-2 border rounded-full bg-white dark:bg-gray-800 dark:border-gray-600 w-full focus:ring-2 focus:ring-blue-500 focus:outline-none border-gray-300"
-    />
+{/* Controls Row */}
+<div className="flex flex-col gap-4 mb-6">
+  {/* Top Row: Search + Filters */}
+  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4">
+    {/* Search */}
+    <div className="relative w-full sm:w-64">
+      <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 w-5 h-5" />
+      <input
+        type="text"
+        placeholder="Search sales..."
+        value={search}
+        onChange={(e) => setSearch(e.target.value)}
+        className="pl-10 pr-4 py-2 border rounded-full bg-white dark:bg-gray-800 dark:border-gray-600 w-full focus:ring-2 focus:ring-blue-500 focus:outline-none border-gray-300"
+      />
+    </div>    
   </div>
 
-  {/* Filters + Sort + Total */}
-  <div className="flex flex-col sm:flex-row items-end gap-3">
+  {/* Customer Filter Buttons + Sorters in one row */}
+<div className="flex flex-wrap items-center gap-2">
+{/* Customer Buttons */}
+{uniqueCustomers.map((c) => (
+  <button
+    key={c.id}
+    onClick={() => toggleCustomer(c.id)}
+    className={`px-3 py-1 rounded-md border text-sm transition ${
+      selectedCustomers.includes(c.id)
+        ? "bg-blue-600 text-white border-blue-600"
+        : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 border-gray-300 dark:border-gray-600 hover:bg-gray-200 dark:hover:bg-gray-600"
+    }`}
+  >
+    {c.name}
+  </button>
+))}
+
+{/* Clear All Button */}
+{selectedCustomers.length > 0 && (
+  <button
+    onClick={() => setSelectedCustomers([])}
+    className="px-3 py-1 rounded-md border text-sm bg-red-500 text-white border-red-600 hover:bg-red-200 transition"
+  >
+    Clear All
+  </button>
+)}
+  {/* Filters + Sort (pushed to the right) */}
+  <div className="flex flex-col sm:flex-row items-end gap-3 ml-auto">
     <select
       value={filter}
       onChange={(e) => setFilter(e.target.value as any)}
@@ -197,7 +249,9 @@ const retractAllRows = () => {
       )}
     </button>
   </div>
+  </div>
 </div>
+
       {/* Table */}
 <div className="overflow-x-auto rounded-2xl shadow-lg border border-gray-300 dark:border-gray-700 overflow-hidden">
   <table className="min-w-full border-collapse text-sm">
@@ -253,7 +307,7 @@ const retractAllRows = () => {
                   : "bg-gray-50 dark:bg-gray-800"
               } hover:bg-blue-50 dark:hover:bg-gray-700 transition border-b border-gray-300 dark:border-gray-700`}
             >
-              <td className="p-4 font-medium text-gray-900 dark:text-gray-100">
+              <td className="p-4 font-medium text-gray-900 dark:text-gray-100 text-lg">
                 {sale.customer?.name}
               </td>
 

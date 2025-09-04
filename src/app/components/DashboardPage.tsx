@@ -1,7 +1,7 @@
 "use client";
 
 import { Card, CardContent } from "@/components/ui/card";
-import { DollarSign, Users, Box, UserCog } from "lucide-react";
+import { PhilippinePeso, Users, Box, UserCheck } from "lucide-react";
 import {
   LineChart,
   Line,
@@ -17,31 +17,43 @@ import {
   ResponsiveContainer,
   Legend,
 } from "recharts";
+import { useEffect, useState } from "react";
 
 export default function Dashboard() {
-  const salesData = [
-    { month: "Jan", sales: 4000 },
-    { month: "Feb", sales: 3000 },
-    { month: "Mar", sales: 5000 },
-    { month: "Apr", sales: 4780 },
-    { month: "May", sales: 5890 },
-    { month: "Jun", sales: 4390 },
-    { month: "Jul", sales: 6490 },
-  ];
+  const [salesData, setSalesData] = useState<any[]>([]);
+  const [customersData, setCustomersData] = useState<any[]>([]);
+  const [productsData, setProductsData] = useState<any[]>([]);
+  const [stats, setStats] = useState<any>({
+    customers: 0,
+    products: 0,
+    totalSales: 0,
+    users: 0,
+    topCustomer: null,
+  });
 
-  const customersData = [
-    { name: "New", value: 400 },
-    { name: "Returning", value: 300 },
-    { name: "Churned", value: 100 },
-  ];
-  const COLORS = ["#34d399", "#60a5fa", "#f87171"];
+  useEffect(() => {
+    async function fetchData() {
+      const res = await fetch("/api/dashboard");
+      const data = await res.json();
+      setSalesData(data.salesData);
+      setCustomersData(data.customersData);
+      setProductsData(data.productsData);
 
-  const productsData = [
-    { name: "Rice", stock: 120 },
-    { name: "Sugar", stock: 98 },
-    { name: "Corn", stock: 86 },
-    { name: "Wheat", stock: 99 },
-  ];
+      // Find top customer based on segment with highest percentage/value
+      const topSegment =
+        data.customersData && data.customersData.length > 0
+          ? data.customersData.reduce((a: any, b: any) =>
+              a.value > b.value ? a : b
+            )
+          : null;
+
+      setStats({
+        ...data.stats,
+        topCustomer: topSegment ? topSegment.name : "N/A",
+      });
+    }
+    fetchData();
+  }, []);
 
   return (
     <div className="p-6 mt-6 space-y-6">
@@ -56,18 +68,47 @@ export default function Dashboard() {
         />
 
         {/* Side Card - 1/4 width */}
-<Card className="bg-card dark:bg-gray-800 text-card-foreground shadow-md rounded-2xl h-[400px] lg:col-span-3">
-          <CardContent className="p-6 flex flex-col justify-center items-center text-center space-y-4 h-full">
-            <h3 className="text-lg font-semibold text-foreground">Quick Stats</h3>
-            <p className="text-sm text-muted-foreground">
-              This could show alerts, tips, or summaries.
-            </p>
-            <div className="flex flex-col space-y-2">
+        <Card className="bg-card dark:bg-gray-800 text-card-foreground shadow-md rounded-2xl h-[400px] lg:col-span-3">
+          <CardContent className="p-6 flex flex-col justify-center items-center text-center space-y-6 h-full">
+            <h3 className="text-lg font-semibold text-foreground">
+              Quick Stats
+            </h3>
+
+            <div className="flex flex-col space-y-4">
+              {/* Today's Revenue */}
               <span className="text-sm text-muted-foreground">
-                Orders Today: <b className="text-foreground">25</b>
+                Today's Revenue:{" "}
+                <b className="text-foreground">
+                  ₱
+                  {salesData
+                    .filter(
+                      (s) =>
+                        new Date(s.createdAt).toDateString() ===
+                        new Date().toDateString()
+                    )
+                    .reduce((acc, cur) => acc + cur.sales, 0)
+                    .toLocaleString()}
+                </b>
               </span>
+
+              {/* Best-Selling Product */}
               <span className="text-sm text-muted-foreground">
-                Pending: <b className="text-foreground">5</b>
+                Best Seller:{" "}
+                <b className="text-foreground">
+                  {productsData.length > 0
+                    ? productsData.reduce((a, b) =>
+                        a.sales > b.sales ? a : b
+                      ).name
+                    : "N/A"}
+                </b>
+              </span>
+
+              {/* Top Customer */}
+              <span className="text-sm text-muted-foreground">
+                Top Customer:{" "}
+                <b className="text-foreground">
+                  {stats.topCustomer ?? "N/A"}
+                </b>
               </span>
             </div>
           </CardContent>
@@ -79,10 +120,12 @@ export default function Dashboard() {
         {/* Customers */}
         <Card className="shadow-md rounded-2xl bg-card dark:bg-gray-800 text-card-foreground">
           <CardContent className="p-6 flex flex-col justify-center items-center text-center space-y-2">
-            <Users className="h-8 w-8 text-primary" />
+            <Users className="h-8 w-8 text-blue-400" />
             <div>
               <p className="text-sm text-muted-foreground">Customers</p>
-              <p className="text-2xl font-bold text-primary">350</p>
+              <p className="text-2xl font-bold text-blue-400">
+                {stats.customers}
+              </p>
             </div>
           </CardContent>
         </Card>
@@ -90,10 +133,12 @@ export default function Dashboard() {
         {/* Products */}
         <Card className="shadow-md rounded-2xl bg-card dark:bg-gray-800 text-card-foreground">
           <CardContent className="p-6 flex flex-col justify-center items-center text-center space-y-2">
-            <Box className="h-8 w-8 text-accent" />
+            <Box className="h-8 w-8 text-orange-400" />
             <div>
               <p className="text-sm text-muted-foreground">Products</p>
-              <p className="text-2xl font-bold text-accent">42</p>
+              <p className="text-2xl font-bold text-orange-400">
+                {stats.products}
+              </p>
             </div>
           </CardContent>
         </Card>
@@ -101,10 +146,12 @@ export default function Dashboard() {
         {/* Total Sales */}
         <Card className="shadow-md rounded-2xl bg-card dark:bg-gray-800 text-card-foreground">
           <CardContent className="p-6 flex flex-col justify-center items-center text-center space-y-2">
-            <DollarSign className="h-8 w-8 text-primary" />
+            <PhilippinePeso className="h-8 w-8 text-green-400" />
             <div>
               <p className="text-sm text-muted-foreground">Total Sales</p>
-              <p className="text-2xl font-bold text-primary">₱120,000</p>
+              <p className="text-2xl font-bold text-green-400">
+                ₱{stats.totalSales.toLocaleString()}
+              </p>
             </div>
           </CardContent>
         </Card>
@@ -112,108 +159,110 @@ export default function Dashboard() {
         {/* Users */}
         <Card className="shadow-md rounded-2xl bg-card dark:bg-gray-800 text-card-foreground">
           <CardContent className="p-6 flex flex-col justify-center items-center text-center space-y-2">
-            <UserCog className="h-8 w-8 text-destructive" />
+            <UserCheck className="h-8 w-8 text-destructive" />
             <div>
               <p className="text-sm text-muted-foreground">Users</p>
-              <p className="text-2xl font-bold text-destructive">8</p>
+              <p className="text-2xl font-bold text-destructive">
+                {stats.users}
+              </p>
             </div>
           </CardContent>
         </Card>
       </div>
 
-     {/* Charts Section */}
-<div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-{/* Sales Over Time */}
-<Card className="shadow-md rounded-2xl bg-card dark:bg-gray-800 text-card-foreground">
-  <CardContent className="p-6 flex flex-col h-[350px]">
-    <h3 className="text-lg font-semibold mb-4">Sales Over Time</h3>
-    <div className="flex-1">
-      <ResponsiveContainer width="100%" height="100%">
-        <LineChart data={salesData}>
-          <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-          <XAxis dataKey="month" stroke="var(--muted-foreground)" />
-          <YAxis stroke="var(--muted-foreground)" />
-          <Tooltip
-            contentStyle={{
-              backgroundColor: "var(--popover)",
-              color: "var(--popover-foreground)",
-            }}
-          />
-          <Line
-            type="monotone"
-            dataKey="sales"
-            className="stroke-blue-400 dark:stroke-blue-500"
-            strokeWidth={3}
-          />
-        </LineChart>
-      </ResponsiveContainer>
-    </div>
-  </CardContent>
-</Card>
+      {/* Charts Section */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Sales Over Time */}
+        <Card className="shadow-md rounded-2xl bg-card dark:bg-gray-800 text-card-foreground">
+          <CardContent className="p-6 flex flex-col h-[350px]">
+            <h3 className="text-lg font-semibold mb-4">Sales Over Time</h3>
+            <div className="flex-1">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={salesData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+                  <XAxis dataKey="month" stroke="var(--muted-foreground)" />
+                  <YAxis stroke="var(--muted-foreground)" />
+                  <Tooltip />
+                  <Line
+                    type="monotone"
+                    dataKey="sales"
+                    className="stroke-blue-400 dark:stroke-blue-500"
+                    strokeWidth={3}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          </CardContent>
+        </Card>
 
-{/* Customer Segments */}
-<Card className="shadow-md rounded-2xl bg-card dark:bg-gray-800 text-card-foreground">
-  <CardContent className="p-6 flex flex-col h-[350px]">
-    <h3 className="text-lg font-semibold mb-4">Customer Segments</h3>
-    <div className="flex-1 flex justify-center items-center">
-      <ResponsiveContainer width="100%" height="100%">
-        <PieChart>
-          <Pie
-            data={customersData}
-            cx="50%"
-            cy="50%"
-            labelLine={false}
-            outerRadius="70%" // scales dynamically
-            dataKey="value"
-            label
-          >
-            {customersData.map((entry, index) => (
-              <Cell
-                key={`cell-${index}`}
-                fill={COLORS[index % COLORS.length]}
-              />
-            ))}
-          </Pie>
-          <Legend />
-          <Tooltip
-            contentStyle={{
-              backgroundColor: "var(--popover)",
-              color: "var(--popover-foreground)",
-            }}
-          />
-        </PieChart>
-      </ResponsiveContainer>
-    </div>
-  </CardContent>
-</Card>
+        {/* Customer Segments */}
+        <Card className="shadow-md rounded-2xl bg-card dark:bg-gray-800 text-card-foreground">
+          <CardContent className="p-6 flex flex-col h-[350px]">
+            <h3 className="text-lg font-semibold mb-4">Customer Segments</h3>
+            <div className="flex-1 flex justify-center items-center">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={customersData}
+                    cx="50%"
+                    cy="50%"
+                    outerRadius="70%"
+                    dataKey="value"
+                    label={({ percent }) =>
+                      percent !== undefined
+                        ? `${(percent * 100).toFixed(1)}%`
+                        : ""
+                    }
+                  >
+                    {customersData.map((entry, index) => {
+                      const hue = (index * 137.508) % 360; // golden angle for distinct colors
+                      return (
+                        <Cell
+                          key={`cell-${index}`}
+                          fill={`hsl(${hue}, 70%, 50%)`}
+                        />
+                      );
+                    })}
+                  </Pie>
+                  <Legend />
+                  <Tooltip
+                    formatter={(value: number) => [
+                      `₱${value.toLocaleString()}`,
+                      "Customers",
+                    ]}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+          </CardContent>
+        </Card>
 
-
-{/* Product Inventory */}
-<Card className="shadow-md rounded-2xl bg-card dark:bg-gray-800 text-card-foreground">
-  <CardContent className="p-6 flex flex-col h-[350px]">
-    <h3 className="text-lg font-semibold mb-4">Product Inventory</h3>
-    <div className="flex-1">
-      <ResponsiveContainer width="100%" height="100%">
-        <BarChart data={productsData} barCategoryGap="20%">
-          <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-          <XAxis dataKey="name" stroke="var(--muted-foreground)" />
-          <YAxis stroke="var(--muted-foreground)" />
-          <Tooltip
-            contentStyle={{
-              backgroundColor: "var(--popover)",
-              color: "var(--popover-foreground)",
-            }}
-          />
-          <Bar
-            dataKey="stock"
-            className="fill-blue-400 dark:fill-blue-500" 
-            radius={[6, 6, 0, 0]} 
-          />
-        </BarChart>
-      </ResponsiveContainer>
-    </div>
-  </CardContent>
-</Card>
+        {/* Product Sales */}
+        <Card className="shadow-md rounded-2xl bg-card dark:bg-gray-800 text-card-foreground">
+          <CardContent className="p-6 flex flex-col h-[350px]">
+            <h3 className="text-lg font-semibold mb-4">Product Sales</h3>
+            <div className="flex-1">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={productsData} barCategoryGap="20%">
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+                  <XAxis dataKey="name" stroke="var(--muted-foreground)" />
+                  <YAxis stroke="var(--muted-foreground)" />
+                  <Tooltip
+                    formatter={(value: number) => [
+                      `₱${value.toLocaleString()}`,
+                      "Sales",
+                    ]}
+                  />
+                  <Bar
+                    dataKey="sales"
+                    className="fill-blue-400 dark:fill-blue-500"
+                    radius={[6, 6, 0, 0]}
+                  />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );
