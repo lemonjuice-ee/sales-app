@@ -46,7 +46,9 @@ export default function NewSaleForm({
   );
   const [products, setProducts] = useState<Product[]>([]);
   const [saleProducts, setSaleProducts] = useState<SaleProduct[]>([]);
-  const [showConfirm, setShowConfirm] = useState(false); // ✅ control modal
+  const [showConfirm, setShowConfirm] = useState(false);
+
+  const isEdit = Boolean(initialData); // check if editing
 
   // Prefill for editing
   useEffect(() => {
@@ -77,7 +79,9 @@ export default function NewSaleForm({
   useEffect(() => {
     async function fetchProducts() {
       if (!selectedCustomer) return;
-      const res = await fetch(`/api/customers/${selectedCustomer.id}/products`);
+      const res = await fetch(
+        `/api/customers/${selectedCustomer.id}/products`
+      );
       if (res.ok) {
         const data = await res.json();
         setProducts(data);
@@ -86,8 +90,12 @@ export default function NewSaleForm({
     fetchProducts();
   }, [selectedCustomer]);
 
-  // Update/add product quantity
-  const handleUpdateProduct = (product: Product, newQty: number) => {
+  // Update/add product quantity & price
+  const handleUpdateProduct = (
+    product: Product,
+    newQty: number,
+    newPrice: number
+  ) => {
     setSaleProducts((prev) => {
       if (newQty <= 0) {
         return prev.filter((i) => i.productId !== product.id);
@@ -95,7 +103,9 @@ export default function NewSaleForm({
       const existing = prev.find((i) => i.productId === product.id);
       if (existing) {
         return prev.map((i) =>
-          i.productId === product.id ? { ...i, quantity: newQty } : i
+          i.productId === product.id
+            ? { ...i, quantity: newQty, price: newPrice }
+            : i
         );
       }
       return [
@@ -103,7 +113,7 @@ export default function NewSaleForm({
         {
           productId: product.id,
           name: product.name,
-          price: product.pricePerKilo,
+          price: newPrice,
           quantity: newQty,
         },
       ];
@@ -127,7 +137,7 @@ export default function NewSaleForm({
       return;
     }
 
-    // Shape products properly for API (exclude name)
+    // Shape products properly for API
     const productsForApi = saleProducts.map((i) => ({
       productId: i.productId,
       quantity: i.quantity,
@@ -142,7 +152,7 @@ export default function NewSaleForm({
     };
 
     const res = await fetch("/api/sales", {
-      method: initialData ? "PUT" : "POST",
+      method: isEdit ? "PUT" : "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
     });
@@ -160,7 +170,7 @@ export default function NewSaleForm({
       <form
         onSubmit={(e) => {
           e.preventDefault();
-          setShowConfirm(true); // ✅ show modal before saving
+          setShowConfirm(true);
         }}
         className="w-full max-w-7xl mx-auto bg-gray-200 dark:bg-gray-700 p-8 rounded-lg space-y-6 text-gray-800 dark:text-gray-100 shadow"
       >
@@ -181,7 +191,7 @@ export default function NewSaleForm({
               )
             }
             required
-            disabled={!!initialData} // lock customer when editing
+            disabled={isEdit} // lock customer when editing
             className="text-lg mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-md p-2 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100"
           >
             <option value="">Select a customer</option>
@@ -204,6 +214,7 @@ export default function NewSaleForm({
               {products.map((p) => {
                 const item = saleProducts.find((i) => i.productId === p.id);
                 const qty = item ? item.quantity : 0;
+                const price = item ? item.price : p.pricePerKilo;
 
                 return (
                   <div
@@ -215,9 +226,39 @@ export default function NewSaleForm({
                       <h4 className="text-xl font-bold text-gray-900 dark:text-gray-100">
                         {p.name}
                       </h4>
-                      <p className="text-lg font-semibold text-gray-500 dark:text-gray-400">
-                        ₱{p.pricePerKilo}/kg
-                      </p>
+                      <div className="flex items-center gap-2">
+                        <span className="text-lg font-semibold text-gray-500 dark:text-gray-400">
+                          ₱
+                        </span>
+
+                        {/* Price editable only in edit mode */}
+                        {isEdit ? (
+                          <input
+                            type="number"
+                            value={price}
+                            min={0}
+                            step={0.01}
+                            onChange={(e) =>
+                              handleUpdateProduct(
+                                p,
+                                qty,
+                                Number(e.target.value)
+                              )
+                            }
+                            className="w-24 text-center border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 py-1 text-gray-800 dark:text-gray-100"
+                            placeholder="Price"
+                            aria-label={`Price per kg for ${p.name}`}
+                          />
+                        ) : (
+                          <span className="text-gray-800 dark:text-gray-100">
+                            {price.toFixed(2)}
+                          </span>
+                        )}
+
+                        <span className="text-gray-500 dark:text-gray-400">
+                          /kg
+                        </span>
+                      </div>
                     </div>
 
                     {/* Divider */}
@@ -229,7 +270,7 @@ export default function NewSaleForm({
                         type="button"
                         aria-label={`Decrease quantity for ${p.name}`}
                         onClick={() =>
-                          handleUpdateProduct(p, Math.max(qty - 1, 0))
+                          handleUpdateProduct(p, Math.max(qty - 1, 0), price)
                         }
                         className="p-2 bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-100 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition"
                       >
@@ -240,21 +281,22 @@ export default function NewSaleForm({
                         id={`qty-${p.id}`}
                         type="number"
                         value={qty === 0 ? "" : qty}
-                        onChange={(e) => {
-                          const value = e.target.value;
+                        onChange={(e) =>
                           handleUpdateProduct(
                             p,
-                            value === "" ? 0 : Number(value)
-                          );
-                        }}
+                            e.target.value === "" ? 0 : Number(e.target.value),
+                            price
+                          )
+                        }
                         className="w-20 text-center border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 py-2"
                         placeholder="0"
+                        aria-label={`Quantity for ${p.name}`}
                       />
 
                       <button
                         type="button"
                         aria-label={`Increase quantity for ${p.name}`}
-                        onClick={() => handleUpdateProduct(p, qty + 1)}
+                        onClick={() => handleUpdateProduct(p, qty + 1, price)}
                         className="p-2 bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-100 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition"
                       >
                         <Plus className="w-4 h-4" />
@@ -284,7 +326,7 @@ export default function NewSaleForm({
                 {saleProducts.map((item, i) => (
                   <tr key={i}>
                     <td className="p-2">{item.name}</td>
-                    <td className="p-2">₱{item.price}</td>
+                    <td className="p-2">₱{item.price.toFixed(2)}</td>
                     <td className="p-2">{item.quantity}</td>
                     <td className="p-2">
                       ₱{(item.price * item.quantity).toFixed(2)}
@@ -326,25 +368,29 @@ export default function NewSaleForm({
             disabled={!saleProducts.length}
             className="px-6 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50"
           >
-            {initialData ? "Update Sale" : "Save Sale"}
+            {isEdit ? "Update Sale" : "Save Sale"}
           </button>
         </div>
       </form>
 
-      {/* ✅ Confirmation Modal */}
+      {/* Confirmation Modal */}
       {showConfirm && (
         <ConfirmationModal
           message={
-            initialData
+            isEdit
               ? "Are you sure you want to update this sale?"
               : "Are you sure you want to save this new sale?"
           }
-          confirmText={initialData ? "Update" : "Save"}
+          confirmText={isEdit ? "Update" : "Save"}
           type="default"
           onCancel={() => setShowConfirm(false)}
           onConfirm={async () => {
-            setShowConfirm(false);
-            await handleSubmit();
+            try {
+              await handleSubmit();
+              setShowConfirm(false);
+            } catch (err) {
+              // keep modal open on error
+            }
           }}
         />
       )}

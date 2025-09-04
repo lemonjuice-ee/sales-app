@@ -745,7 +745,14 @@ onDelete={(id) => {
     </div>
   </div>
 )}
-      {confirmMessage && <ConfirmationModal message={confirmMessage} onConfirm={confirmAction} onCancel={closeConfirm} type={confirmMessage.toLowerCase().includes("delete") ? "delete" : "default"} confirmText={confirmMessage.toLowerCase().includes("delete") ? "Delete" : "Confirm"} />}
+ {confirmMessage && (
+  <ConfirmationModal
+    message={confirmMessage}
+    onConfirm={confirmAction}
+    onCancel={closeConfirm}
+    type={confirmMessage.toLowerCase().includes("delete") ? "delete" : "default"}
+    confirmText={confirmMessage.toLowerCase().includes("delete") ? "Delete" : "Confirm"}
+  />)}
     </div>
   );
 }

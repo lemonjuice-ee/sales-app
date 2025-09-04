@@ -21,8 +21,8 @@ export default function ConfirmationModal({
 
   const confirmButtonClass =
     type === "delete"
-      ? "px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 disabled:opacity-50"
-      : "px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50";
+      ? "px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 disabled:opacity-50 flex items-center justify-center gap-2"
+      : "px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50 flex items-center justify-center gap-2";
 
   // Handle Enter/Escape keys
   useEffect(() => {
@@ -54,7 +54,7 @@ export default function ConfirmationModal({
     <div
       className="fixed inset-0 flex items-center justify-center z-50 bg-black/30 backdrop-blur-sm"
       onClick={(e) => {
-        if (e.target === e.currentTarget) onCancel();
+        if (e.target === e.currentTarget && !loading) onCancel();
       }}
     >
       <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-sm p-6 transition-colors">
@@ -78,7 +78,26 @@ export default function ConfirmationModal({
             className={confirmButtonClass}
           >
             {loading ? (
-              <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+              <svg
+                className="w-5 h-5 text-white animate-spin"
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+              >
+                <circle
+                  className="opacity-25"
+                  cx="12"
+                  cy="12"
+                  r="10"
+                  stroke="currentColor"
+                  strokeWidth="4"
+                ></circle>
+                <path
+                  className="opacity-75"
+                  fill="currentColor"
+                  d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+                ></path>
+              </svg>
             ) : (
               confirmText
             )}
