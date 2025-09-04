@@ -1,7 +1,8 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
-import { PhilippinePeso, Users, Box, UserCheck } from "lucide-react";
+import { PhilippinePeso, Users, Box, UserCheck, Eye, EyeClosed } from "lucide-react";
 import {
   LineChart,
   Line,
@@ -17,7 +18,15 @@ import {
   ResponsiveContainer,
   Legend,
 } from "recharts";
-import { useEffect, useState } from "react";
+
+// ✅ Safe Skeleton Component (renders span instead of div)
+function Skeleton({ className }: { className?: string }) {
+  return (
+    <span
+      className={`inline-block animate-pulse bg-muted rounded-md ${className}`}
+    />
+  );
+}
 
 export default function Dashboard() {
   const [salesData, setSalesData] = useState<any[]>([]);
@@ -30,30 +39,57 @@ export default function Dashboard() {
     users: 0,
     topCustomer: null,
   });
+  const [loading, setLoading] = useState(true);
+
+  // 👁️ Visibility toggle state
+  const [showTotals, setShowTotals] = useState(false);
 
   useEffect(() => {
     async function fetchData() {
-      const res = await fetch("/api/dashboard");
-      const data = await res.json();
-      setSalesData(data.salesData);
-      setCustomersData(data.customersData);
-      setProductsData(data.productsData);
+      try {
+        const res = await fetch("/api/dashboard");
+        const data = await res.json();
+        setSalesData(data.salesData);
+        setCustomersData(data.customersData);
+        setProductsData(data.productsData);
 
-      // Find top customer based on segment with highest percentage/value
-      const topSegment =
-        data.customersData && data.customersData.length > 0
-          ? data.customersData.reduce((a: any, b: any) =>
-              a.value > b.value ? a : b
-            )
-          : null;
+        // Find top customer based on segment with highest percentage/value
+        const topSegment =
+          data.customersData && data.customersData.length > 0
+            ? data.customersData.reduce((a: any, b: any) =>
+                a.value > b.value ? a : b
+              )
+            : null;
 
-      setStats({
-        ...data.stats,
-        topCustomer: topSegment ? topSegment.name : "N/A",
-      });
+        setStats({
+          ...data.stats,
+          topCustomer: topSegment ? topSegment.name : "N/A",
+        });
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
     }
     fetchData();
   }, []);
+
+  const displayValue = (value: number) => {
+    const formatted =
+      "₱" +
+      value.toLocaleString(undefined, {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      });
+
+    return showTotals ? (
+      formatted
+    ) : (
+      <span className="inline-block filter blur-sm select-none">
+        {formatted}
+      </span>
+    );
+  };
 
   return (
     <div className="p-6 mt-6 space-y-6">
@@ -75,19 +111,22 @@ export default function Dashboard() {
             </h3>
 
             <div className="flex flex-col space-y-4">
-              {/* Today's Revenue */}
+              {/* Current Month's Sales */}
               <span className="text-sm text-muted-foreground">
-                Today's Revenue:{" "}
+                {new Date().toLocaleString("default", { month: "long" })} Sales:{" "}
                 <b className="text-foreground">
-                  ₱
-                  {salesData
-                    .filter(
-                      (s) =>
-                        new Date(s.createdAt).toDateString() ===
-                        new Date().toDateString()
-                    )
-                    .reduce((acc, cur) => acc + cur.sales, 0)
-                    .toLocaleString()}
+                  {loading ? (
+                    <Skeleton className="w-20 h-5" />
+                  ) : (
+                    "₱" +
+                    (
+                      salesData.find(
+                        (s) =>
+                          s.month ===
+                          new Date().toLocaleString("default", { month: "short" })
+                      )?.sales ?? 0
+                    ).toLocaleString()
+                  )}
                 </b>
               </span>
 
@@ -95,11 +134,15 @@ export default function Dashboard() {
               <span className="text-sm text-muted-foreground">
                 Best Seller:{" "}
                 <b className="text-foreground">
-                  {productsData.length > 0
-                    ? productsData.reduce((a, b) =>
-                        a.sales > b.sales ? a : b
-                      ).name
-                    : "N/A"}
+                  {loading ? (
+                    <Skeleton className="w-16 h-5" />
+                  ) : productsData.length > 0 ? (
+                    productsData.reduce((a, b) =>
+                      a.sales > b.sales ? a : b
+                    ).name
+                  ) : (
+                    "N/A"
+                  )}
                 </b>
               </span>
 
@@ -107,7 +150,11 @@ export default function Dashboard() {
               <span className="text-sm text-muted-foreground">
                 Top Customer:{" "}
                 <b className="text-foreground">
-                  {stats.topCustomer ?? "N/A"}
+                  {loading ? (
+                    <Skeleton className="w-16 h-5" />
+                  ) : (
+                    stats.topCustomer ?? "N/A"
+                  )}
                 </b>
               </span>
             </div>
@@ -123,9 +170,13 @@ export default function Dashboard() {
             <Users className="h-8 w-8 text-blue-400" />
             <div>
               <p className="text-sm text-muted-foreground">Customers</p>
-              <p className="text-2xl font-bold text-blue-400">
-                {stats.customers}
-              </p>
+              <div className="text-2xl font-bold text-blue-400">
+                {loading ? (
+                  <Skeleton className="w-12 h-6 mx-auto" />
+                ) : (
+                  stats.customers
+                )}
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -136,23 +187,40 @@ export default function Dashboard() {
             <Box className="h-8 w-8 text-orange-400" />
             <div>
               <p className="text-sm text-muted-foreground">Products</p>
-              <p className="text-2xl font-bold text-orange-400">
-                {stats.products}
-              </p>
+              <div className="text-2xl font-bold text-orange-400">
+                {loading ? (
+                  <Skeleton className="w-12 h-6 mx-auto" />
+                ) : (
+                  stats.products
+                )}
+              </div>
             </div>
           </CardContent>
         </Card>
 
-        {/* Total Sales */}
-        <Card className="shadow-md rounded-2xl bg-card dark:bg-gray-800 text-card-foreground">
+        {/* Total Sales with Toggle 👁️ */}
+        <Card className="shadow-md rounded-2xl bg-card dark:bg-gray-800 text-card-foreground relative">
           <CardContent className="p-6 flex flex-col justify-center items-center text-center space-y-2">
             <PhilippinePeso className="h-8 w-8 text-green-400" />
             <div>
               <p className="text-sm text-muted-foreground">Total Sales</p>
-              <p className="text-2xl font-bold text-green-400">
-                ₱{stats.totalSales.toLocaleString()}
-              </p>
+              <div className="text-2xl font-bold text-green-400">
+                {loading ? (
+                  <Skeleton className="w-20 h-6 mx-auto" />
+                ) : (
+                  displayValue(stats.totalSales ?? 0)
+                )}
+              </div>
             </div>
+
+            {/* 👁️ Toggle button */}
+            <button
+              onClick={() => setShowTotals((prev) => !prev)}
+              className="absolute top-4 right-4 p-1.5 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition"
+              aria-label={showTotals ? "Hide totals" : "Show totals"}
+            >
+              {showTotals ? <Eye size={20} /> : <EyeClosed size={20} />}
+            </button>
           </CardContent>
         </Card>
 
@@ -162,9 +230,13 @@ export default function Dashboard() {
             <UserCheck className="h-8 w-8 text-destructive" />
             <div>
               <p className="text-sm text-muted-foreground">Users</p>
-              <p className="text-2xl font-bold text-destructive">
-                {stats.users}
-              </p>
+              <div className="text-2xl font-bold text-destructive">
+                {loading ? (
+                  <Skeleton className="w-12 h-6 mx-auto" />
+                ) : (
+                  stats.users
+                )}
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -177,20 +249,24 @@ export default function Dashboard() {
           <CardContent className="p-6 flex flex-col h-[350px]">
             <h3 className="text-lg font-semibold mb-4">Sales Over Time</h3>
             <div className="flex-1">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={salesData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-                  <XAxis dataKey="month" stroke="var(--muted-foreground)" />
-                  <YAxis stroke="var(--muted-foreground)" />
-                  <Tooltip />
-                  <Line
-                    type="monotone"
-                    dataKey="sales"
-                    className="stroke-blue-400 dark:stroke-blue-500"
-                    strokeWidth={3}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
+              {loading ? (
+                <Skeleton className="w-full h-full" />
+              ) : (
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={salesData}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+                    <XAxis dataKey="month" stroke="var(--muted-foreground)" />
+                    <YAxis stroke="var(--muted-foreground)" />
+                    <Tooltip />
+                    <Line
+                      type="monotone"
+                      dataKey="sales"
+                      className="stroke-blue-400 dark:stroke-blue-500"
+                      strokeWidth={3}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -200,39 +276,43 @@ export default function Dashboard() {
           <CardContent className="p-6 flex flex-col h-[350px]">
             <h3 className="text-lg font-semibold mb-4">Customer Segments</h3>
             <div className="flex-1 flex justify-center items-center">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={customersData}
-                    cx="50%"
-                    cy="50%"
-                    outerRadius="70%"
-                    dataKey="value"
-                    label={({ percent }) =>
-                      percent !== undefined
-                        ? `${(percent * 100).toFixed(1)}%`
-                        : ""
-                    }
-                  >
-                    {customersData.map((entry, index) => {
-                      const hue = (index * 137.508) % 360; // golden angle for distinct colors
-                      return (
-                        <Cell
-                          key={`cell-${index}`}
-                          fill={`hsl(${hue}, 70%, 50%)`}
-                        />
-                      );
-                    })}
-                  </Pie>
-                  <Legend />
-                  <Tooltip
-                    formatter={(value: number) => [
-                      `₱${value.toLocaleString()}`,
-                      "Customers",
-                    ]}
-                  />
-                </PieChart>
-              </ResponsiveContainer>
+              {loading ? (
+                <Skeleton className="w-full h-full" />
+              ) : (
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={customersData}
+                      cx="50%"
+                      cy="50%"
+                      outerRadius="70%"
+                      dataKey="value"
+                      label={({ percent }) =>
+                        percent !== undefined
+                          ? `${(percent * 100).toFixed(1)}%`
+                          : ""
+                      }
+                    >
+                      {customersData.map((entry, index) => {
+                        const hue = (index * 137.508) % 360; // golden angle for distinct colors
+                        return (
+                          <Cell
+                            key={`cell-${index}`}
+                            fill={`hsl(${hue}, 70%, 50%)`}
+                          />
+                        );
+                      })}
+                    </Pie>
+                    <Legend />
+                    <Tooltip
+                      formatter={(value: number) => [
+                        `₱${value.toLocaleString()}`,
+                        "Customers",
+                      ]}
+                    />
+                  </PieChart>
+                </ResponsiveContainer>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -242,24 +322,28 @@ export default function Dashboard() {
           <CardContent className="p-6 flex flex-col h-[350px]">
             <h3 className="text-lg font-semibold mb-4">Product Sales</h3>
             <div className="flex-1">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={productsData} barCategoryGap="20%">
-                  <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-                  <XAxis dataKey="name" stroke="var(--muted-foreground)" />
-                  <YAxis stroke="var(--muted-foreground)" />
-                  <Tooltip
-                    formatter={(value: number) => [
-                      `₱${value.toLocaleString()}`,
-                      "Sales",
-                    ]}
-                  />
-                  <Bar
-                    dataKey="sales"
-                    className="fill-blue-400 dark:fill-blue-500"
-                    radius={[6, 6, 0, 0]}
-                  />
-                </BarChart>
-              </ResponsiveContainer>
+              {loading ? (
+                <Skeleton className="w-full h-full" />
+              ) : (
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={productsData} barCategoryGap="20%">
+                    <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+                    <XAxis dataKey="name" stroke="var(--muted-foreground)" />
+                    <YAxis stroke="var(--muted-foreground)" />
+                    <Tooltip
+                      formatter={(value: number) => [
+                        `₱${value.toLocaleString()}`,
+                        "Sales",
+                      ]}
+                    />
+                    <Bar
+                      dataKey="sales"
+                      className="fill-blue-400 dark:fill-blue-500"
+                      radius={[6, 6, 0, 0]}
+                    />
+                  </BarChart>
+                </ResponsiveContainer>
+              )}
             </div>
           </CardContent>
         </Card>
