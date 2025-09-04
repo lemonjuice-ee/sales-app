@@ -13,6 +13,7 @@ type Product = {
   id: number;
   name: string;
   pricePerKilo: number;
+  totalPurchased?: number; // from API: total quantity purchased by this customer
 };
 
 type SaleProduct = {
@@ -30,8 +31,8 @@ type SaleData = {
 };
 
 type NewSaleFormProps = {
-  initialData?: SaleData; // when editing
-  onSaved: () => void; // called after save
+  initialData?: SaleData;
+  onSaved: () => void;
   onCancel?: () => void;
 };
 
@@ -41,20 +42,19 @@ export default function NewSaleForm({
   onCancel,
 }: NewSaleFormProps) {
   const [customers, setCustomers] = useState<Customer[]>([]);
-  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(
-    null
-  );
+  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
   const [saleProducts, setSaleProducts] = useState<SaleProduct[]>([]);
   const [showConfirm, setShowConfirm] = useState(false);
 
-  const isEdit = Boolean(initialData); // check if editing
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 6;
+
+  const isEdit = Boolean(initialData);
 
   // Prefill for editing
   useEffect(() => {
-    if (initialData) {
-      setSaleProducts(initialData.products);
-    }
+    if (initialData) setSaleProducts(initialData.products);
   }, [initialData]);
 
   // Fetch customers
@@ -65,9 +65,7 @@ export default function NewSaleForm({
         const data = await res.json();
         setCustomers(data);
         if (initialData) {
-          const cust = data.find(
-            (c: Customer) => c.id === initialData.customerId
-          );
+          const cust = data.find((c: Customer) => c.id === initialData.customerId);
           setSelectedCustomer(cust || null);
         }
       }
@@ -79,65 +77,51 @@ export default function NewSaleForm({
   useEffect(() => {
     async function fetchProducts() {
       if (!selectedCustomer) return;
-      const res = await fetch(
-        `/api/customers/${selectedCustomer.id}/products`
-      );
+      const res = await fetch(`/api/customers/${selectedCustomer.id}/products`);
       if (res.ok) {
-        const data = await res.json();
+        let data: Product[] = await res.json();
+        // Sort by past purchases: most purchased first
+        data = data.sort((a, b) => (b.totalPurchased ?? 0) - (a.totalPurchased ?? 0));
         setProducts(data);
       }
     }
     fetchProducts();
+    setCurrentPage(1); // reset pagination when customer changes
   }, [selectedCustomer]);
 
-  // Update/add product quantity & price
-  const handleUpdateProduct = (
-    product: Product,
-    newQty: number,
-    newPrice: number
-  ) => {
+  // Pagination logic
+  const totalPages = Math.ceil(products.length / itemsPerPage);
+  const paginatedProducts = products.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
+
+  // Existing functions
+  const handleUpdateProduct = (product: Product, newQty: number, newPrice: number) => {
     setSaleProducts((prev) => {
-      if (newQty <= 0) {
-        return prev.filter((i) => i.productId !== product.id);
-      }
+      if (newQty <= 0) return prev.filter((i) => i.productId !== product.id);
       const existing = prev.find((i) => i.productId === product.id);
       if (existing) {
         return prev.map((i) =>
-          i.productId === product.id
-            ? { ...i, quantity: newQty, price: newPrice }
-            : i
+          i.productId === product.id ? { ...i, quantity: newQty, price: newPrice } : i
         );
       }
-      return [
-        ...prev,
-        {
-          productId: product.id,
-          name: product.name,
-          price: newPrice,
-          quantity: newQty,
-        },
-      ];
+      return [...prev, { productId: product.id, name: product.name, price: newPrice, quantity: newQty }];
     });
   };
 
-  // Remove product
   const handleRemoveProduct = (index: number) => {
     setSaleProducts((prev) => prev.filter((_, i) => i !== index));
   };
 
-  const total = saleProducts.reduce(
-    (sum, item) => sum + item.price * item.quantity,
-    0
-  );
+  const total = saleProducts.reduce((sum, item) => sum + item.price * item.quantity, 0);
 
-  // Submit to API
   const handleSubmit = async () => {
     if (!selectedCustomer) {
       alert("Please select a customer");
       return;
     }
 
-    // Shape products properly for API
     const productsForApi = saleProducts.map((i) => ({
       productId: i.productId,
       quantity: i.quantity,
@@ -157,9 +141,8 @@ export default function NewSaleForm({
       body: JSON.stringify(payload),
     });
 
-    if (res.ok) {
-      onSaved();
-    } else {
+    if (res.ok) onSaved();
+    else {
       const err = await res.json().catch(() => ({}));
       alert(err.error || "Failed to save sale");
     }
@@ -176,10 +159,7 @@ export default function NewSaleForm({
       >
         {/* Customer Dropdown */}
         <div>
-          <label
-            htmlFor="customer"
-            className="block text-xl font-semibold text-gray-800 dark:text-gray-100 mb-2"
-          >
+          <label htmlFor="customer" className="block text-xl font-semibold mb-2">
             Customer
           </label>
           <select
@@ -191,8 +171,8 @@ export default function NewSaleForm({
               )
             }
             required
-            disabled={isEdit} // lock customer when editing
-            className="text-lg mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-md p-2 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100"
+            disabled={isEdit}
+            className="text-lg mt-1 block w-full border rounded-md p-2 bg-white dark:bg-gray-800"
           >
             <option value="">Select a customer</option>
             {customers.map((c) => (
@@ -203,15 +183,12 @@ export default function NewSaleForm({
           </select>
         </div>
 
-        {/* Product Tiles */}
+        {/* Product Tiles with Pagination */}
         {selectedCustomer && (
           <div className="space-y-6">
-            <h3 className="text-xl font-semibold text-gray-800 dark:text-gray-100">
-              Select Products
-            </h3>
-
+            <h3 className="text-xl font-semibold">Select Products</h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {products.map((p) => {
+              {paginatedProducts.map((p) => {
                 const item = saleProducts.find((i) => i.productId === p.id);
                 const qty = item ? item.quantity : 0;
                 const price = item ? item.price : p.pricePerKilo;
@@ -219,93 +196,86 @@ export default function NewSaleForm({
                 return (
                   <div
                     key={p.id}
-                    className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-sm hover:shadow-md transition-shadow p-5 flex flex-col justify-between"
+                    className="bg-white dark:bg-gray-800 border rounded-xl shadow-sm p-5 flex flex-col justify-between"
                   >
-                    {/* Product Info */}
                     <div className="mb-4">
-                      <h4 className="text-xl font-bold text-gray-900 dark:text-gray-100">
-                        {p.name}
-                      </h4>
+                      <h4 className="text-xl font-bold">{p.name}</h4>
                       <div className="flex items-center gap-2">
-                        <span className="text-lg font-semibold text-gray-500 dark:text-gray-400">
-                          ₱
-                        </span>
-
-                        {/* Price editable only in edit mode */}
-                        {isEdit ? (
-                          <input
-                            type="number"
-                            value={price}
-                            min={0}
-                            step={0.01}
-                            onChange={(e) =>
-                              handleUpdateProduct(
-                                p,
-                                qty,
-                                Number(e.target.value)
-                              )
-                            }
-                            className="w-24 text-center border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 py-1 text-gray-800 dark:text-gray-100"
-                            placeholder="Price"
-                            aria-label={`Price per kg for ${p.name}`}
-                          />
-                        ) : (
-                          <span className="text-gray-800 dark:text-gray-100">
-                            {price.toFixed(2)}
-                          </span>
-                        )}
-
-                        <span className="text-gray-500 dark:text-gray-400">
-                          /kg
-                        </span>
+                        <span>₱</span>
+                        <span>{price.toFixed(2)}</span>
+                        <span>/kg</span>
                       </div>
                     </div>
 
-                    {/* Divider */}
-                    <div className="border-t border-gray-200 dark:border-gray-700 my-3" />
+                    <div className="border-t my-3" />
 
-                    {/* Quantity Controls */}
                     <div className="flex items-center justify-between">
-                      <button
-                        type="button"
-                        aria-label={`Decrease quantity for ${p.name}`}
-                        onClick={() =>
-                          handleUpdateProduct(p, Math.max(qty - 1, 0), price)
-                        }
-                        className="p-2 bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-100 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition"
-                      >
-                        <Minus className="w-4 h-4" />
-                      </button>
+<button type="button" onClick={() => handleUpdateProduct(p, qty - 1, price)}>
+  <Minus className="w-4 h-4" />
+  <span className="sr-only">Decrease quantity for {p.name}</span>
+</button>
 
                       <input
-                        id={`qty-${p.id}`}
                         type="number"
+                        step="1"
                         value={qty === 0 ? "" : qty}
                         onChange={(e) =>
                           handleUpdateProduct(
                             p,
-                            e.target.value === "" ? 0 : Number(e.target.value),
+                            e.target.value === "" ? 0 : parseFloat(e.target.value),
                             price
                           )
                         }
-                        className="w-20 text-center border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 py-2"
+                        className="w-20 text-center border rounded-lg bg-white dark:bg-gray-900 py-2"
                         placeholder="0"
-                        aria-label={`Quantity for ${p.name}`}
                       />
+<button type="button" onClick={() => handleUpdateProduct(p, qty + 1, price)}>
+  <Plus className="w-4 h-4" />
+  <span className="sr-only">Increase quantity for {p.name}</span>
+</button>
 
-                      <button
-                        type="button"
-                        aria-label={`Increase quantity for ${p.name}`}
-                        onClick={() => handleUpdateProduct(p, qty + 1, price)}
-                        className="p-2 bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-100 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition"
-                      >
-                        <Plus className="w-4 h-4" />
-                      </button>
                     </div>
                   </div>
                 );
               })}
             </div>
+{/* Pagination Controls */}
+{totalPages > 1 && (
+  <div className="flex justify-center items-center gap-2 mt-4">
+    <button
+      type="button" // ✅ add this
+      onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+      disabled={currentPage === 1}
+      className="px-3 py-1 border rounded-md bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
+    >
+      Previous
+    </button>
+
+    {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+      <button
+        type="button" // ✅ add this
+        key={page}
+        onClick={() => setCurrentPage(page)}
+        className={`px-3 py-1 border rounded-md ${
+          page === currentPage
+            ? "bg-blue-600 text-white border-blue-600"
+            : "bg-gray-100 text-gray-800 border-gray-300 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-200 dark:border-gray-600 dark:hover:bg-gray-600"
+        }`}
+      >
+        {page}
+      </button>
+    ))}
+
+    <button
+      type="button" // ✅ add this
+      onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+      disabled={currentPage === totalPages}
+      className="px-3 py-1 border rounded-md bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
+    >
+      Next
+    </button>
+  </div>
+)}
           </div>
         )}
 
@@ -315,11 +285,11 @@ export default function NewSaleForm({
             <table className="w-full border-collapse bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 rounded-lg shadow">
               <thead className="bg-gray-200 dark:bg-gray-700">
                 <tr>
-                  <th className="p-2 text-left bg-gray-900">Product</th>
-                  <th className="p-2 text-left bg-gray-900">Price</th>
-                  <th className="p-2 text-left bg-gray-900">Quantity</th>
-                  <th className="p-2 text-left bg-gray-900">Subtotal</th>
-                  <th className="p-2 bg-gray-900 w-20"></th>
+                  <th className="p-2 text-left">Product</th>
+                  <th className="p-2 text-left">Price</th>
+                  <th className="p-2 text-left">Quantity</th>
+                  <th className="p-2 text-left">Subtotal</th>
+                  <th className="p-2 w-20"></th>
                 </tr>
               </thead>
               <tbody>
@@ -328,9 +298,7 @@ export default function NewSaleForm({
                     <td className="p-2">{item.name}</td>
                     <td className="p-2">₱{item.price.toFixed(2)}</td>
                     <td className="p-2">{item.quantity}</td>
-                    <td className="p-2">
-                      ₱{(item.price * item.quantity).toFixed(2)}
-                    </td>
+                    <td className="p-2">₱{(item.price * item.quantity).toFixed(2)}</td>
                     <td className="p-2 text-center">
                       <button
                         type="button"
@@ -388,9 +356,7 @@ export default function NewSaleForm({
             try {
               await handleSubmit();
               setShowConfirm(false);
-            } catch (err) {
-              // keep modal open on error
-            }
+            } catch (err) {}
           }}
         />
       )}

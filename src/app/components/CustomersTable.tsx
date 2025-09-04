@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { toast } from "react-hot-toast";
 import { ArrowUp, ArrowDown, Shrimp } from "lucide-react";
 
@@ -15,6 +15,7 @@ type Product = {
   name: string;
   capitalPerKilo: number;
   pricePerKilo?: number;
+  totalPurchased?: number; // for sorting by past sales
 };
 
 type CustomersTableProps = {
@@ -30,16 +31,19 @@ export default function CustomersTable({ customers, onEdit, onDelete }: Customer
   const [sortField, setSortField] = useState<keyof Customer>("name");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
   const [priceErrors, setPriceErrors] = useState<Record<number, Record<number, string>>>({});
+  const [page, setPage] = useState<Record<number, number>>({}); // per-customer page number
+  const PRODUCTS_PER_PAGE = 5;
 
   const fetchProducts = async (customerId: number) => {
     try {
       const res = await fetch(`/api/customers/${customerId}/products`);
-      const data = await res.json();
+      const data: Product[] = await res.json();
 
       if (!res.ok || !Array.isArray(data)) {
-        throw new Error(data?.error || "Unexpected API response");
+        throw new Error("Unexpected API response");
       }
 
+      // Already sorted by past sales in API
       setCustomerProducts((prev) => ({ ...prev, [customerId]: data }));
 
       const initialPrices: Record<number, string> = {};
@@ -47,6 +51,8 @@ export default function CustomersTable({ customers, onEdit, onDelete }: Customer
         initialPrices[p.id] = (p.pricePerKilo ?? p.capitalPerKilo).toString();
       });
       setEditingPrices((prev) => ({ ...prev, [customerId]: initialPrices }));
+
+      setPage((prev) => ({ ...prev, [customerId]: 1 })); // initialize page
     } catch (error) {
       console.error("Failed to load products:", error);
       toast.error("Failed to load products.");
@@ -119,6 +125,10 @@ export default function CustomersTable({ customers, onEdit, onDelete }: Customer
     return 0;
   });
 
+  const handlePageChange = (customerId: number, newPage: number) => {
+    setPage((prev) => ({ ...prev, [customerId]: newPage }));
+  };
+
   return (
     <div className="mx-4 sm:mx-6 mt-2">
       {/* Sort Controls */}
@@ -156,13 +166,12 @@ export default function CustomersTable({ customers, onEdit, onDelete }: Customer
                 <span className="text-gray-800 dark:text-gray-100 font-bold truncate">{customer.name}</span>
                 <span className="text-gray-500 dark:text-gray-400 truncate">{customer.email}</span>
                 <button
-                 className="flex items-center justify-center gap-2 px-3 py-1 
-           bg-purple-200/70 dark:bg-orange-900/50 
-           text-orange-600 dark:text-orange-400 
-           rounded-lg font-medium 
-           hover:bg-orange-200/80 dark:hover:bg-orange-800/60 
-           transition w-full sm:w-40"
-
+                  className="flex items-center justify-center gap-2 px-3 py-1 
+                    bg-purple-200/70 dark:bg-orange-900/50 
+                    text-orange-600 dark:text-orange-400 
+                    rounded-lg font-medium 
+                    hover:bg-orange-200/80 dark:hover:bg-orange-800/60 
+                    transition w-full sm:w-40"
                   onClick={() => handleViewProducts(customer.id)}
                 >
                   <Shrimp className="w-5 h-5" />
@@ -184,47 +193,101 @@ export default function CustomersTable({ customers, onEdit, onDelete }: Customer
                 </div>
               </div>
 
-              {/* Expanded products */}
+              {/* Expanded products with pagination */}
               {expandedCustomer === customer.id && customerProducts[customer.id] && (
                 <div className="mt-4 grid gap-4">
-                  {customerProducts[customer.id].map((product) => (
-                    <div
-                      key={product.id}
-                      className="bg-gray-50 dark:bg-gray-700 p-4 sm:p-5 rounded-xl shadow-sm hover:shadow-md transition flex flex-col sm:flex-row sm:items-center gap-4"
-                    >
-                      <div className="flex-1">
-                        <h4 className="font-semibold text-gray-800 dark:text-gray-100 text-sm sm:text-base">{product.name}</h4>
-                        <p className="text-gray-500 dark:text-gray-400 text-sm sm:text-base mt-1">
-                          Capital: ₱{product.capitalPerKilo.toLocaleString()}
-                        </p>
+                  {(customerProducts[customer.id] || [])
+                    .slice(
+                      (page[customer.id] - 1) * PRODUCTS_PER_PAGE,
+                      page[customer.id] * PRODUCTS_PER_PAGE
+                    )
+                    .map((product) => (
+                      <div
+                        key={product.id}
+                        className="bg-gray-50 dark:bg-gray-700 p-4 sm:p-5 rounded-xl shadow-sm hover:shadow-md transition flex flex-col sm:flex-row sm:items-center gap-4"
+                      >
+                        <div className="flex-1">
+                          <h4 className="font-semibold text-gray-800 dark:text-gray-100 text-sm sm:text-base">{product.name}</h4>
+                          <p className="text-gray-500 dark:text-gray-400 text-sm sm:text-base mt-1">
+                            Capital: ₱{product.capitalPerKilo.toLocaleString()}
+                          </p>
+                        </div>
+                        <div className="w-full sm:w-40 flex flex-col mt-2 sm:mt-0">
+                          <label
+                            htmlFor={`price-${customer.id}-${product.id}`}
+                            className="text-gray-700 dark:text-gray-300 font-medium mb-1 text-sm"
+                          >
+                            Retail Price
+                          </label>
+                          <input
+                            id={`price-${customer.id}-${product.id}`}
+                            type="number"
+                            className={`border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100
+                              ${
+                                priceErrors[customer.id]?.[product.id]
+                                  ? "border-red-500 focus:ring-red-400"
+                                  : "border-gray-300 dark:border-gray-600 focus:ring-blue-400"
+                              }`}
+                            placeholder="₱ Enter price"
+                            value={editingPrices[customer.id][product.id]}
+                            onChange={(e) =>
+                              handlePriceChange(customer.id, product.id, e.target.value)
+                            }
+                          />
+                          {priceErrors[customer.id]?.[product.id] && (
+                            <p className="text-red-500 text-xs mt-1">{priceErrors[customer.id][product.id]}</p>
+                          )}
+                        </div>
                       </div>
-                      <div className="w-full sm:w-40 flex flex-col mt-2 sm:mt-0">
-                        <label
-                          htmlFor={`price-${customer.id}-${product.id}`}
-                          className="text-gray-700 dark:text-gray-300 font-medium mb-1 text-sm"
+                    ))}
+
+                  {/* Pagination controls */}
+                  {customerProducts[customer.id].length > PRODUCTS_PER_PAGE && (
+                    <div className="flex justify-center items-center gap-2 mt-2">
+                      <button
+                        onClick={() => handlePageChange(customer.id, Math.max(page[customer.id] - 1, 1))}
+                        disabled={page[customer.id] === 1}
+                        className="px-3 py-1 border rounded-md bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 disabled:opacity-50"
+                      >
+                        Previous
+                      </button>
+                      {Array.from(
+                        {
+                          length: Math.ceil(customerProducts[customer.id].length / PRODUCTS_PER_PAGE),
+                        },
+                        (_, i) => i + 1
+                      ).map((p) => (
+                        <button
+                          key={p}
+                          onClick={() => handlePageChange(customer.id, p)}
+                          className={`px-3 py-1 border rounded-md ${
+                            page[customer.id] === p
+                              ? "bg-blue-600 text-white border-blue-600"
+                              : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 border-gray-300 dark:border-gray-600 hover:bg-gray-200 dark:hover:bg-gray-600"
+                          }`}
                         >
-                          Retail Price
-                        </label>
-                        <input
-                          id={`price-${customer.id}-${product.id}`}
-                          type="number"
-                          className={`border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100
-                            ${
-                              priceErrors[customer.id]?.[product.id]
-                                ? "border-red-500 focus:ring-red-400"
-                                : "border-gray-300 dark:border-gray-600 focus:ring-blue-400"
-                            }`}
-                          placeholder="₱ Enter price"
-                          value={editingPrices[customer.id][product.id]}
-                          onChange={(e) => handlePriceChange(customer.id, product.id, e.target.value)}
-                        />
-                        {priceErrors[customer.id]?.[product.id] && (
-                          <p className="text-red-500 text-xs mt-1">{priceErrors[customer.id][product.id]}</p>
-                        )}
-                      </div>
+                          {p}
+                        </button>
+                      ))}
+                      <button
+                        onClick={() =>
+                          handlePageChange(
+                            customer.id,
+                            Math.min(
+                              page[customer.id] + 1,
+                              Math.ceil(customerProducts[customer.id].length / PRODUCTS_PER_PAGE)
+                            )
+                          )
+                        }
+                        disabled={page[customer.id] === Math.ceil(customerProducts[customer.id].length / PRODUCTS_PER_PAGE)}
+                        className="px-3 py-1 border rounded-md bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 disabled:opacity-50"
+                      >
+                        Next
+                      </button>
                     </div>
-                  ))}
-                  <div className="flex justify-end">
+                  )}
+
+                  <div className="flex justify-end mt-2">
                     <button
                       onClick={() => handleSavePrices(customer.id)}
                       className="px-6 py-2 bg-blue-500 text-white font-medium rounded-xl hover:bg-blue-600 transition"
