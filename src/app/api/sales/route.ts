@@ -21,7 +21,10 @@ export async function GET() {
     return new Response(JSON.stringify(sales), { status: 200 });
   } catch (error) {
     console.error(error);
-    return new Response(JSON.stringify({ error: "Failed to fetch sales" }), { status: 500 });
+    return new Response(
+      JSON.stringify({ error: "Failed to fetch sales" }),
+      { status: 500 }
+    );
   }
 }
 
@@ -29,16 +32,20 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { customerId, products, total } = body;
+    const { customerId, products, total, createdAt } = body;
 
     if (!customerId || !products || products.length === 0 || total === undefined) {
-      return new Response(JSON.stringify({ error: "Missing required fields" }), { status: 400 });
+      return new Response(
+        JSON.stringify({ error: "Missing required fields" }),
+        { status: 400 }
+      );
     }
 
     const sale = await prisma.sale.create({
       data: {
         customerId,
         total,
+        createdAt: createdAt ? new Date(createdAt) : undefined, // 👈 allow overriding createdAt
         products: {
           create: products.map((p: any) => ({
             productId: p.productId,
@@ -56,7 +63,10 @@ export async function POST(request: Request) {
     return new Response(JSON.stringify(sale), { status: 201 });
   } catch (error) {
     console.error(error);
-    return new Response(JSON.stringify({ error: "Failed to create sale" }), { status: 500 });
+    return new Response(
+      JSON.stringify({ error: "Failed to create sale" }),
+      { status: 500 }
+    );
   }
 }
 
@@ -64,10 +74,13 @@ export async function POST(request: Request) {
 export async function PUT(request: Request) {
   try {
     const body = await request.json();
-    const { id, customerId, products, total } = body;
+    const { id, customerId, products, total, createdAt } = body;
 
     if (!id) {
-      return new Response(JSON.stringify({ error: "Missing sale id" }), { status: 400 });
+      return new Response(
+        JSON.stringify({ error: "Missing sale id" }),
+        { status: 400 }
+      );
     }
 
     // Update basic sale info
@@ -76,6 +89,7 @@ export async function PUT(request: Request) {
       data: {
         customerId: customerId || undefined,
         total: total || undefined,
+        createdAt: createdAt ? new Date(createdAt) : undefined, // 👈 allow updating createdAt
       },
     });
 
@@ -104,7 +118,10 @@ export async function PUT(request: Request) {
     return new Response(JSON.stringify(updatedSale), { status: 200 });
   } catch (error) {
     console.error(error);
-    return new Response(JSON.stringify({ error: "Failed to update sale" }), { status: 500 });
+    return new Response(
+      JSON.stringify({ error: "Failed to update sale" }),
+      { status: 500 }
+    );
   }
 }
 
@@ -115,7 +132,10 @@ export async function DELETE(request: Request) {
     const { id } = body;
 
     if (!id) {
-      return new Response(JSON.stringify({ error: "Missing sale id" }), { status: 400 });
+      return new Response(
+        JSON.stringify({ error: "Missing sale id" }),
+        { status: 400 }
+      );
     }
 
     // Delete related sale products first
@@ -125,9 +145,15 @@ export async function DELETE(request: Request) {
       where: { id },
     });
 
-    return new Response(JSON.stringify({ message: "Sale deleted" }), { status: 200 });
+    return new Response(
+      JSON.stringify({ message: "Sale deleted" }),
+      { status: 200 }
+    );
   } catch (error) {
     console.error(error);
-    return new Response(JSON.stringify({ error: "Failed to delete sale" }), { status: 500 });
+    return new Response(
+      JSON.stringify({ error: "Failed to delete sale" }),
+      { status: 500 }
+    );
   }
 }

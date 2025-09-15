@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { format } from "date-fns";
+import { format, isSameDay } from "date-fns";
 import {
   Search,
   ArrowUp,
@@ -53,6 +53,7 @@ export default function SalesTable({ sales, onEdit, onDelete }: Props) {
   const [filter, setFilter] = useState<"all" | "today" | "week" | "month">(
     "all"
   );
+const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [sortKey, setSortKey] = useState<"date" | "total">("date");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
   const [visible, setVisible] = useState(false);
@@ -83,20 +84,23 @@ export default function SalesTable({ sales, onEdit, onDelete }: Props) {
       data = data.filter(
         (sale) =>
           sale.customer?.name.toLowerCase().includes(q) ||
-          sale.products.some((p) =>
-            p.product.name.toLowerCase().includes(q)
-          )
+          sale.products.some((p) => p.product.name.toLowerCase().includes(q))
       );
     }
 
     if (selectedCustomers.length > 0) {
-      data = data.filter((sale) => selectedCustomers.includes(sale.customer?.id));
+      data = data.filter((sale) =>
+        selectedCustomers.includes(sale.customer?.id)
+      );
     }
 
     const now = new Date();
+
+    // Apply quick filters
     if (filter === "today") {
       data = data.filter(
-        (sale) => new Date(sale.createdAt).toDateString() === now.toDateString()
+        (sale) =>
+          new Date(sale.createdAt).toDateString() === now.toDateString()
       );
     } else if (filter === "week") {
       const start = new Date(now);
@@ -106,6 +110,14 @@ export default function SalesTable({ sales, onEdit, onDelete }: Props) {
       const start = new Date(now.getFullYear(), now.getMonth(), 1);
       data = data.filter((sale) => new Date(sale.createdAt) >= start);
     }
+
+    // Apply specific date filters
+if (selectedDate) {
+  data = data.filter((sale) =>
+    isSameDay(new Date(sale.createdAt), new Date(selectedDate))
+  );
+}
+
 
     data.sort((a, b) => {
       if (sortKey === "date") {
@@ -119,7 +131,7 @@ export default function SalesTable({ sales, onEdit, onDelete }: Props) {
     });
 
     return data;
-  }, [sales, search, filter, sortKey, sortOrder, selectedCustomers]);
+  }, [sales, search, filter, selectedCustomers, selectedDate, sortKey, sortOrder]);
 
   const totalSales = useMemo(() => {
     return filteredSales.reduce((sum, sale) => sum + sale.total, 0);
@@ -130,7 +142,9 @@ export default function SalesTable({ sales, onEdit, onDelete }: Props) {
       (sum, sale) =>
         sum +
         sale.products.reduce(
-          (pSum, sp) => pSum + (sp.price - sp.product.capitalPerKilo) * sp.quantity,
+          (pSum, sp) =>
+            pSum +
+            (sp.price - sp.product.capitalPerKilo) * sp.quantity,
           0
         ),
       0
@@ -149,7 +163,9 @@ export default function SalesTable({ sales, onEdit, onDelete }: Props) {
     return visible ? (
       formatted
     ) : (
-      <span className="inline-block filter blur-sm select-none">{formatted}</span>
+      <span className="inline-block filter blur-sm select-none">
+        {formatted}
+      </span>
     );
   };
 
@@ -162,7 +178,7 @@ export default function SalesTable({ sales, onEdit, onDelete }: Props) {
   const retractAllRows = () => setExpandedRows([]);
 
   const [currentPage, setCurrentPage] = useState(1);
-  const rowsPerPage = 14; // Changed to 6 per page
+  const rowsPerPage = 14;
   const totalPages = Math.ceil(filteredSales.length / rowsPerPage);
 
   const paginatedSales = useMemo(() => {
@@ -184,7 +200,7 @@ export default function SalesTable({ sales, onEdit, onDelete }: Props) {
   };
 
   return (
-    <div className="mt-10">
+    <div className="mt-2">
       {/* Controls */}
       <div className="flex flex-col gap-4 mb-6">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4">
@@ -195,68 +211,98 @@ export default function SalesTable({ sales, onEdit, onDelete }: Props) {
               placeholder="Search sales..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="pl-10 pr-4 py-2 border rounded-full bg-white dark:bg-gray-800 dark:border-gray-600 w-full focus:ring-2 focus:ring-blue-500 focus:outline-none border-gray-300"
+              className="pl-10 pr-4 py-2 border rounded-lg bg-white dark:bg-gray-800 dark:border-gray-600 w-full focus:ring-2 focus:ring-blue-500 focus:outline-none border-gray-300"
             />
           </div>
         </div>
 
         {/* Customer Filter Buttons + Sorters */}
-        <div className="flex flex-wrap items-center gap-2">
-          {uniqueCustomers.map((c) => (
-            <button
-              key={c.id}
-              onClick={() => toggleCustomer(c.id)}
-              className={`px-3 py-1 rounded-md border text-sm transition ${
-                selectedCustomers.includes(c.id)
-                  ? "bg-blue-600 text-white border-blue-600"
-                  : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 border-gray-300 dark:border-gray-600 hover:bg-gray-200 dark:hover:bg-gray-600"
-              }`}
-            >
-              {c.name}
-            </button>
-          ))}
+<div className="flex flex-col gap-4">
+  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 w-full">
+    {/* Customer buttons (left side) */}
+    <div className="grid grid-cols-2 sm:grid-cols-5 md:grid-cols-10 gap-2">
+      {uniqueCustomers
+        .slice() // create a copy so we don’t mutate state
+        .sort((a, b) => a.name.localeCompare(b.name)) // sort alphabetically
+        .map((c) => (
+          <button
+            key={c.id}
+            onClick={() => toggleCustomer(c.id)}
+            className={`px-3 py-1 rounded-md border text-sm transition ${
+              selectedCustomers.includes(c.id)
+                ? "bg-blue-600 text-white border-blue-600"
+                : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 border-gray-300 dark:border-gray-600 hover:bg-gray-200 dark:hover:bg-gray-600"
+            }`}
+          >
+            {c.name}
+          </button>
+        ))}
 
-          {selectedCustomers.length > 0 && (
-            <button
-              onClick={() => setSelectedCustomers([])}
-              className="px-3 py-1 rounded-md border text-sm bg-red-500 text-white border-red-600 hover:bg-red-200 transition"
-            >
-              Clear All
-            </button>
-          )}
+      {selectedCustomers.length > 0 && (
+        <button
+          onClick={() => setSelectedCustomers([])}
+          className="px-3 py-1 rounded-md border text-sm bg-red-500 text-white border-red-600 hover:bg-red-200 transition"
+        >
+          Clear All
+        </button>
+      )}
+    </div>
+    {/* Filters, Date Picker, Sorters (right side) */}
+    <div className="flex flex-col sm:flex-row items-end sm:items-center gap-3 mt-10">
+      {/* Quick Filters */}
+      <select
+        value={filter}
+        onChange={(e) => setFilter(e.target.value as any)}
+        aria-label="Filter sales by date"
+        className="px-3 py-2 border rounded-md dark:bg-gray-800 dark:border-gray-600 text-sm bg-white border-gray-300"
+      >
+        <option value="all">All</option>
+        <option value="today">Today</option>
+        <option value="week">This Week</option>
+        <option value="month">This Month</option>
+      </select>
 
-          <div className="flex flex-col sm:flex-row items-end gap-3 ml-auto">
-            <select
-              value={filter}
-              onChange={(e) => setFilter(e.target.value as any)}
-              aria-label="Filter sales by date"
-              className="px-3 py-2 border rounded-md dark:bg-gray-800 dark:border-gray-600 text-sm bg-white border-gray-300"
-            >
-              <option value="all">All</option>
-              <option value="today">Today</option>
-              <option value="week">This Week</option>
-              <option value="month">This Month</option>
-            </select>
+      {/* Date picker */}
+      <div>
+        <label htmlFor="datePicker" className="sr-only">
+          Select a date
+        </label>
+        <input
+          id="datePicker"
+          type="date"
+          value={selectedDate || ""}
+          onChange={(e) => setSelectedDate(e.target.value || null)}
+          aria-label="Select a date"
+          className="px-3 py-2 border rounded-md dark:bg-gray-800 dark:border-gray-600 text-sm bg-white border-gray-300"
+        />
+      </div>
 
-            <select
-              value={sortKey}
-              onChange={(e) => setSortKey(e.target.value as any)}
-              aria-label="Sort sales"
-              className="px-3 py-2 border rounded-md dark:bg-gray-800 dark:border-gray-600 text-sm bg-white border-gray-300"
-            >
-              <option value="date">Sort by Date</option>
-              <option value="total">Sort by Total</option>
-            </select>
+      {/* Sort by */}
+      <select
+        value={sortKey}
+        onChange={(e) => setSortKey(e.target.value as any)}
+        aria-label="Sort sales"
+        className="px-3 py-2 border rounded-md dark:bg-gray-800 dark:border-gray-600 text-sm bg-white border-gray-300"
+      >
+        <option value="date">Sort by Date</option>
+        <option value="total">Sort by Total</option>
+      </select>
 
-            <button
-              type="button"
-              onClick={() => setSortOrder(sortOrder === "asc" ? "desc" : "asc")}
-              className="p-3 border rounded-md dark:bg-gray-800 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 transition bg-white border-gray-300"
-            >
-              {sortOrder === "asc" ? <ArrowUp className="w-3.5 h-3.5" /> : <ArrowDown className="w-3.5 h-3.5" />}
-            </button>
-          </div>
-        </div>
+      {/* Asc / Desc */}
+      <button
+        type="button"
+        onClick={() => setSortOrder(sortOrder === "asc" ? "desc" : "asc")}
+        className="p-3 border rounded-md dark:bg-gray-800 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 transition bg-white border-gray-300"
+      >
+        {sortOrder === "asc" ? (
+          <ArrowUp className="w-3.5 h-3.5" />
+        ) : (
+          <ArrowDown className="w-3.5 h-3.5" />
+        )}
+      </button>
+    </div>
+  </div>
+</div>
       </div>
 
       {/* Table */}
@@ -396,37 +442,80 @@ export default function SalesTable({ sales, onEdit, onDelete }: Props) {
       </div>
 
       {/* Pagination */}
-      <div className="fixed bottom-0 left-0 right-0 z-50 p-3 flex justify-center items-center gap-2">
-        <button
-          onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-          disabled={currentPage === 1}
-          className="px-3 py-1 border rounded-md bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 disabled:opacity-50"
-        >
-          Previous
-        </button>
+      <div className="fixed bottom-0 left-0 right-0 z-50 p-3 flex justify-center">
+  <div className="flex items-center gap-2 bg-white dark:bg-gray-800 p-2 rounded-md shadow-md">
+    {/* First + Previous */}
+    <button
+      type="button"
+      onClick={() => setCurrentPage(1)}
+      disabled={currentPage === 1}
+      aria-label="Go to first page"
+      className="px-3 py-1 border rounded-md bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
+    >
+      First
+    </button>
 
-        {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-          <button
-            key={page}
-            onClick={() => setCurrentPage(page)}
-            className={`px-3 py-1 border rounded-md ${
-              page === currentPage
-                ? "bg-blue-600 text-white border-blue-600"
-                : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 border-gray-300 dark:border-gray-600 hover:bg-gray-200 dark:hover:bg-gray-600"
-            }`}
-          >
-            {page}
-          </button>
-        ))}
+    <button
+      type="button"
+      onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+      disabled={currentPage === 1}
+      aria-label="Previous page"
+      className="px-3 py-1 border rounded-md bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
+    >
+      Previous
+    </button>
 
-        <button
-          onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
-          disabled={currentPage === totalPages}
-          className="px-3 py-1 border rounded-md bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 disabled:opacity-50"
-        >
-          Next
-        </button>
+    {/* Page numbers */}
+    <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-gray-400 dark:scrollbar-thumb-gray-600 scrollbar-track-transparent">
+      <div className="flex items-center whitespace-nowrap px-2 w-max">
+        {(() => {
+          const maxVisible = 10;
+          const startPage = Math.floor((currentPage - 1) / maxVisible) * maxVisible + 1;
+          const endPage = Math.min(startPage + maxVisible - 1, totalPages);
+
+          return Array.from({ length: endPage - startPage + 1 }, (_, i) => startPage + i).map((page) => (
+            <button
+              key={page}
+              type="button"
+              onClick={() => setCurrentPage(page)}
+              aria-label={`Go to page ${page}`}
+              aria-current={page === currentPage ? "page" : undefined}
+              className={`px-3 py-1 border rounded-md mx-0.5 ${
+                page === currentPage
+                  ? "bg-blue-600 text-white border-blue-600"
+                  : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 border-gray-300 dark:border-gray-600 hover:bg-gray-200 dark:hover:bg-gray-600"
+              }`}
+            >
+              {page}
+            </button>
+          ));
+        })()}
       </div>
+    </div>
+
+    {/* Next + Last */}
+    <button
+      type="button"
+      onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+      disabled={currentPage === totalPages}
+      aria-label="Next page"
+      className="px-3 py-1 border rounded-md bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
+    >
+      Next
+    </button>
+
+    <button
+      type="button"
+      onClick={() => setCurrentPage(totalPages)}
+      disabled={currentPage === totalPages}
+      aria-label="Go to last page"
+      className="px-3 py-1 border rounded-md bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
+    >
+      Last
+    </button>
+  </div>
+</div>
+
 
       {/* Eye Toggle */}
       <div className="fixed bottom-24 right-4 z-50">

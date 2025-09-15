@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
-import { PhilippinePeso, Users, Box, UserCheck, Eye, EyeClosed } from "lucide-react";
+import { PhilippinePeso, Users, Box, UserCheck, Eye, EyeClosed, Star, CalendarDays} from "lucide-react";
 import {
   LineChart,
   Line,
@@ -18,6 +18,7 @@ import {
   ResponsiveContainer,
   Legend,
 } from "recharts";
+import Calendar from "react-calendar";
 
 // ✅ Safe Skeleton Component (renders span instead of div)
 function Skeleton({ className }: { className?: string }) {
@@ -144,8 +145,8 @@ export default function Dashboard() {
 
       </div>
 
-     {/* Metric Cards */}
-<div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-6">
+{/* Metric Cards */}
+<div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-6 h-70">
   {/* Customers */}
   <Card className="shadow-md rounded-2xl bg-card dark:bg-gray-800 text-card-foreground flex flex-col">
     <CardContent className="p-6 flex flex-col justify-center items-center text-center space-y-2 flex-1">
@@ -162,10 +163,10 @@ export default function Dashboard() {
   {/* Products */}
   <Card className="shadow-md rounded-2xl bg-card dark:bg-gray-800 text-card-foreground flex flex-col">
     <CardContent className="p-6 flex flex-col justify-center items-center text-center space-y-2 flex-1">
-      <Box className="h-8 w-8 text-orange-400" />
+      <Box className="h-8 w-8 text-orange-600" />
       <div>
         <p className="text-sm text-muted-foreground">Products</p>
-        <div className="text-2xl font-bold text-orange-400">
+        <div className="text-2xl font-bold text-orange-600">
           {loading ? <Skeleton className="w-12 h-6 mx-auto" /> : stats.products}
         </div>
       </div>
@@ -194,76 +195,65 @@ export default function Dashboard() {
     </button>
   </Card>
 
-  {/* Users */}
+  {/* Current Month Sales */}
+<Card className="shadow-md rounded-2xl bg-card dark:bg-gray-800 text-card-foreground flex flex-col">
+  <CardContent className="p-6 flex flex-col justify-center items-center text-center space-y-2 flex-1">
+    <CalendarDays className="h-8 w-8 text-purple-600" />
+    <div>
+      <p className="text-sm text-muted-foreground">
+        {new Date().toLocaleString("default", { month: "long" })} Sales
+      </p>
+      <div className="text-2xl font-bold text-purple-600">
+        {loading ? (
+          <Skeleton className="w-20 h-6 mx-auto" />
+        ) : (
+          "₱" +
+          (
+            salesData.find(
+              (s) =>
+                s.month ===
+                new Date().toLocaleString("default", { month: "short" })
+            )?.sales ?? 0
+          ).toLocaleString()
+        )}
+      </div>
+    </div>
+  </CardContent>
+</Card>
+
+  {/* Best-Selling Product */}
   <Card className="shadow-md rounded-2xl bg-card dark:bg-gray-800 text-card-foreground flex flex-col">
     <CardContent className="p-6 flex flex-col justify-center items-center text-center space-y-2 flex-1">
-      <UserCheck className="h-8 w-8 text-destructive" />
+      <Star className="h-8 w-8 text-yellow-600" />
       <div>
-        <p className="text-sm text-muted-foreground">Users</p>
-        <div className="text-2xl font-bold text-destructive">
-          {loading ? <Skeleton className="w-12 h-6 mx-auto" /> : stats.users}
+        <p className="text-sm text-muted-foreground">Best Seller</p>
+        <div className="text-2xl font-bold text-yellow-600">
+          {loading ? (
+            <Skeleton className="w-16 h-6 mx-auto" />
+          ) : productsData.length > 0 ? (
+            productsData.reduce((a, b) => (a.sales > b.sales ? a : b)).name
+          ) : (
+            "N/A"
+          )}
         </div>
       </div>
     </CardContent>
   </Card>
 
-        <Card className="bg-card dark:bg-gray-800 text-card-foreground shadow-md rounded-2xl">
-          <CardContent className="p-6 flex flex-col justify-center items-center text-center space-y-6 h-full">
-            <h3 className="text-lg font-semibold text-purple-600">
-              Quick Stats
-            </h3>
-
-            <div className="flex flex-col space-y-4">
-              {/* Current Month's Sales */}
-              <span className="text-sm text-muted-foreground">
-                {new Date().toLocaleString("default", { month: "long" })} Sales:{" "}
-                <b className="text-purple-600">
-                  {loading ? (
-                    <Skeleton className="w-20 h-5" />
-                  ) : (
-                    "₱" +
-                    (
-                      salesData.find(
-                        (s) =>
-                          s.month ===
-                          new Date().toLocaleString("default", { month: "short" })
-                      )?.sales ?? 0
-                    ).toLocaleString()
-                  )}
-                </b>
-              </span>
-
-              {/* Best-Selling Product */}
-              <span className="text-sm text-muted-foreground">
-                Best Seller:{" "}
-                <b className="text-purple-600">
-                  {loading ? (
-                    <Skeleton className="w-16 h-5" />
-                  ) : productsData.length > 0 ? (
-                    productsData.reduce((a, b) =>
-                      a.sales > b.sales ? a : b
-                    ).name
-                  ) : (
-                    "N/A"
-                  )}
-                </b>
-              </span>
-
-              {/* Top Customer */}
-              <span className="text-sm text-muted-foreground">
-                Top Customer:{" "}
-                <b className="text-purple-600">
-                  {loading ? (
-                    <Skeleton className="w-16 h-5" />
-                  ) : (
-                    stats.topCustomer ?? "N/A"
-                  )}
-                </b>
-              </span>
-            </div>
-          </CardContent>
-        </Card>
+  {/* Top Customer */}
+  <Card className="shadow-md rounded-2xl bg-card dark:bg-gray-800 text-card-foreground flex flex-col">
+    <CardContent className="p-6 flex flex-col justify-center items-center text-center space-y-2 flex-1">
+      <UserCheck className="h-8 w-8 text-pink-500" />
+      <div>
+        <p className="text-sm text-muted-foreground">Top Customer</p>
+        <div className="text-2xl font-bold text-pink-500">
+          {loading ? <Skeleton className="w-16 h-6 mx-auto" /> : stats.topCustomer ?? "N/A"}
+        </div>
+      </div>
+    </CardContent>
+  </Card>
 </div>
+
 
       {/* Charts Section */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -280,13 +270,20 @@ export default function Dashboard() {
                     <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
                     <XAxis dataKey="month" stroke="var(--muted-foreground)" />
                     <YAxis stroke="var(--muted-foreground)" />
-                    <Tooltip />
-                    <Line
-                      type="monotone"
-                      dataKey="sales"
-                      className="stroke-blue-400 dark:stroke-blue-500"
-                      strokeWidth={3}
-                    />
+                    <Tooltip
+  formatter={(value: number) => 
+    `₱${value.toLocaleString(undefined, { 
+      minimumFractionDigits: 2, 
+      maximumFractionDigits: 2 
+    })}`
+  }
+/>
+<Line
+  type="monotone"
+  dataKey="sales"
+  className="stroke-blue-400 dark:stroke-blue-500"
+  strokeWidth={3}
+/>
                   </LineChart>
                 </ResponsiveContainer>
               )}
@@ -294,51 +291,86 @@ export default function Dashboard() {
           </CardContent>
         </Card>
 
-        {/* Customer Segments */}
-        <Card className="shadow-md rounded-2xl bg-card dark:bg-gray-800 text-card-foreground">
-          <CardContent className="p-6 flex flex-col h-[350px]">
-            <h3 className="text-lg font-semibold mb-4">Customer Segments</h3>
-            <div className="flex-1 flex justify-center items-center">
-              {loading ? (
-                <Skeleton className="w-full h-full" />
-              ) : (
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={customersData}
-                      cx="50%"
-                      cy="50%"
-                      outerRadius="70%"
-                      dataKey="value"
-                      label={({ percent }) =>
-                        percent !== undefined
-                          ? `${(percent * 100).toFixed(1)}%`
-                          : ""
-                      }
-                    >
-                      {customersData.map((entry, index) => {
-                        const hue = (index * 137.508) % 360; // golden angle for distinct colors
-                        return (
-                          <Cell
-                            key={`cell-${index}`}
-                            fill={`hsl(${hue}, 70%, 50%)`}
-                          />
-                        );
-                      })}
-                    </Pie>
-                    <Legend />
-                    <Tooltip
-                      formatter={(value: number) => [
-                        `₱${value.toLocaleString()}`,
-                        "Customers",
-                      ]}
-                    />
-                  </PieChart>
-                </ResponsiveContainer>
-              )}
-            </div>
-          </CardContent>
-        </Card>
+{/* Customer Segments */}
+<Card className="shadow-md rounded-2xl bg-card dark:bg-gray-800 text-card-foreground">
+  <CardContent className="p-6 flex flex-col h-[350px]">
+    <h3 className="text-lg font-semibold mb-4">Customer Segments</h3>
+    <div className="flex-1 flex justify-center items-center">
+      {loading ? (
+        <Skeleton className="w-full h-full" />
+      ) : (
+        <ResponsiveContainer width="100%" height="100%">
+          <PieChart>
+<Pie
+  data={customersData}
+  cx="45%" // keep pie on the left
+  cy="50%"
+  outerRadius="70%"
+  dataKey="value"
+  label={({ percent }) =>
+    percent !== undefined && percent >= 0.1
+      ? `${(percent * 100).toFixed(1)}%`
+      : ""
+  }
+  labelLine={false} // 🚫 hide the line for labels
+>
+  {customersData.map((entry, index) => {
+    const hue = (index * 137.508) % 360; // golden angle
+    return (
+      <Cell
+        key={`cell-${index}`}
+        fill={`hsl(${hue}, 70%, 50%)`}
+      />
+    );
+  })}
+</Pie>
+
+            {/* Custom Legend: 2 columns, 10 per column */}
+            <Legend
+  layout="vertical"
+  align="right"
+  verticalAlign="middle"
+  content={({ payload }) => {
+    if (!payload) return null;
+
+    // Type cast so TS knows percent exists
+    const sortedPayload = [...payload].sort(
+      (a, b) =>
+        ((b.payload as any)?.percent ?? 0) -
+        ((a.payload as any)?.percent ?? 0)
+    );
+
+    return (
+      <div className="grid grid-cols-2 gap-x-6 gap-y-2">
+        {sortedPayload.slice(0, 20).map((entry, index) => (
+          <div
+            key={`legend-item-${index}`}
+            className="flex items-center text-sm"
+          >
+            <span
+              className="inline-block w-3 h-3 rounded-full mr-2"
+              style={{ backgroundColor: entry.color }}
+            />
+            {entry.value}
+          </div>
+        ))}
+      </div>
+    );
+  }}
+/>
+            <Tooltip
+              formatter={(value: number) => [
+                `₱${value.toLocaleString()}`,
+                "Sales",
+              ]}
+            />
+          </PieChart>
+        </ResponsiveContainer>
+      )}
+    </div>
+  </CardContent>
+</Card>
+
 
         {/* Product Sales */}
         <Card className="shadow-md rounded-2xl bg-card dark:bg-gray-800 text-card-foreground">

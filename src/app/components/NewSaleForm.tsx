@@ -13,7 +13,7 @@ type Product = {
   id: number;
   name: string;
   pricePerKilo: number;
-  totalPurchased?: number; // from API: total quantity purchased by this customer
+  totalPurchased?: number;
 };
 
 type SaleProduct = {
@@ -24,10 +24,11 @@ type SaleProduct = {
 };
 
 type SaleData = {
-  id?: number; // support editing
+  id?: number;
   customerId: number;
   products: SaleProduct[];
   total: number;
+  date?: string;
 };
 
 type NewSaleFormProps = {
@@ -52,9 +53,18 @@ export default function NewSaleForm({
 
   const isEdit = Boolean(initialData);
 
-  // Prefill for editing
+  // 🆕 Date state
+  const [saleDate, setSaleDate] = useState<string>("");
+
+  // Prefill for editing or set today for new
   useEffect(() => {
-    if (initialData) setSaleProducts(initialData.products);
+    if (initialData) {
+      setSaleProducts(initialData.products);
+      setSaleDate(initialData.date || "");
+    } else {
+      const today = new Date().toISOString().split("T")[0];
+      setSaleDate(today);
+    }
   }, [initialData]);
 
   // Fetch customers
@@ -80,13 +90,12 @@ export default function NewSaleForm({
       const res = await fetch(`/api/customers/${selectedCustomer.id}/products`);
       if (res.ok) {
         let data: Product[] = await res.json();
-        // Sort by past purchases: most purchased first
         data = data.sort((a, b) => (b.totalPurchased ?? 0) - (a.totalPurchased ?? 0));
         setProducts(data);
       }
     }
     fetchProducts();
-    setCurrentPage(1); // reset pagination when customer changes
+    setCurrentPage(1);
   }, [selectedCustomer]);
 
   // Pagination logic
@@ -96,7 +105,6 @@ export default function NewSaleForm({
     currentPage * itemsPerPage
   );
 
-  // Existing functions
   const handleUpdateProduct = (product: Product, newQty: number, newPrice: number) => {
     setSaleProducts((prev) => {
       if (newQty <= 0) return prev.filter((i) => i.productId !== product.id);
@@ -121,6 +129,10 @@ export default function NewSaleForm({
       alert("Please select a customer");
       return;
     }
+    if (!saleDate) {
+      alert("Please select a date");
+      return;
+    }
 
     const productsForApi = saleProducts.map((i) => ({
       productId: i.productId,
@@ -128,12 +140,13 @@ export default function NewSaleForm({
       price: i.price,
     }));
 
-    const payload = {
-      id: initialData?.id,
-      customerId: selectedCustomer.id,
-      products: productsForApi,
-      total,
-    };
+const payload = {
+  id: initialData?.id,
+  customerId: selectedCustomer.id,
+  products: productsForApi,
+  total,
+  createdAt: saleDate, // 👈 match schema
+};
 
     const res = await fetch("/api/sales", {
       method: isEdit ? "PUT" : "POST",
@@ -183,6 +196,21 @@ export default function NewSaleForm({
           </select>
         </div>
 
+{/* 🆕 Sale Date */}
+<div>
+  <label htmlFor="saleDate" className="block text-xl font-semibold mb-2">
+    Sale Date
+  </label>
+  <input
+    type="date"
+    id="saleDate"
+    value={saleDate}
+    onChange={(e) => setSaleDate(e.target.value)}
+    className="text-lg mt-1 block w-full border rounded-md p-2 bg-white dark:bg-gray-800"
+    required
+    max={new Date().toISOString().split("T")[0]} // 👈 prevents future dates
+  />
+</div>
         {/* Product Tiles with Pagination */}
         {selectedCustomer && (
           <div className="space-y-6">
@@ -210,10 +238,10 @@ export default function NewSaleForm({
                     <div className="border-t my-3" />
 
                     <div className="flex items-center justify-between">
-<button type="button" onClick={() => handleUpdateProduct(p, qty - 1, price)}>
-  <Minus className="w-4 h-4" />
-  <span className="sr-only">Decrease quantity for {p.name}</span>
-</button>
+                      <button type="button" onClick={() => handleUpdateProduct(p, qty - 1, price)}>
+                        <Minus className="w-4 h-4" />
+                        <span className="sr-only">Decrease quantity for {p.name}</span>
+                      </button>
 
                       <input
                         type="number"
@@ -229,53 +257,52 @@ export default function NewSaleForm({
                         className="w-20 text-center border rounded-lg bg-white dark:bg-gray-900 py-2"
                         placeholder="0"
                       />
-<button type="button" onClick={() => handleUpdateProduct(p, qty + 1, price)}>
-  <Plus className="w-4 h-4" />
-  <span className="sr-only">Increase quantity for {p.name}</span>
-</button>
-
+                      <button type="button" onClick={() => handleUpdateProduct(p, qty + 1, price)}>
+                        <Plus className="w-4 h-4" />
+                        <span className="sr-only">Increase quantity for {p.name}</span>
+                      </button>
                     </div>
                   </div>
                 );
               })}
             </div>
-{/* Pagination Controls */}
-{totalPages > 1 && (
-  <div className="flex justify-center items-center gap-2 mt-4">
-    <button
-      type="button" // ✅ add this
-      onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-      disabled={currentPage === 1}
-      className="px-3 py-1 border rounded-md bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
-    >
-      Previous
-    </button>
+            {/* Pagination Controls */}
+            {totalPages > 1 && (
+              <div className="flex justify-center items-center gap-2 mt-4">
+                <button
+                  type="button"
+                  onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                  disabled={currentPage === 1}
+                  className="px-3 py-1 border rounded-md bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Previous
+                </button>
 
-    {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-      <button
-        type="button" // ✅ add this
-        key={page}
-        onClick={() => setCurrentPage(page)}
-        className={`px-3 py-1 border rounded-md ${
-          page === currentPage
-            ? "bg-blue-600 text-white border-blue-600"
-            : "bg-gray-100 text-gray-800 border-gray-300 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-200 dark:border-gray-600 dark:hover:bg-gray-600"
-        }`}
-      >
-        {page}
-      </button>
-    ))}
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                  <button
+                    type="button"
+                    key={page}
+                    onClick={() => setCurrentPage(page)}
+                    className={`px-3 py-1 border rounded-md ${
+                      page === currentPage
+                        ? "bg-blue-600 text-white border-blue-600"
+                        : "bg-gray-100 text-gray-800 border-gray-300 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-200 dark:border-gray-600 dark:hover:bg-gray-600"
+                    }`}
+                  >
+                    {page}
+                  </button>
+                ))}
 
-    <button
-      type="button" // ✅ add this
-      onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
-      disabled={currentPage === totalPages}
-      className="px-3 py-1 border rounded-md bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
-    >
-      Next
-    </button>
-  </div>
-)}
+                <button
+                  type="button"
+                  onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+                  disabled={currentPage === totalPages}
+                  className="px-3 py-1 border rounded-md bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Next
+                </button>
+              </div>
+            )}
           </div>
         )}
 
