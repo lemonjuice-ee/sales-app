@@ -91,21 +91,6 @@ export default function Dashboard() {
       </span>
     );
   };
-  const messages = [
-  "Hello there!",
-  "Catch me if you can!",
-  "Swim swim swim",
-  "I'm hungry!",
-  "Feeling bubbly!",
-];
-  const [bubbleMessage, setBubbleMessage] = useState(messages[0]);
-
-  const handleMouseEnter = () => {
-    // Pick a random message
-    const randomMsg =
-      messages[Math.floor(Math.random() * messages.length)];
-    setBubbleMessage(randomMsg);
-  };
 
   return (
     <div className="p-6 mt-6 space-y-6">
@@ -122,25 +107,12 @@ export default function Dashboard() {
 {/* Side Card - Full GIF with Hover Bubble */}
 <div
   className="relative group lg:col-span-3 h-[420px] overflow-hidden rounded-2xl shadow-md"
-  onMouseEnter={handleMouseEnter}
 >
   {/* GIF Background */}
   <Card
     className="shadow-md rounded-2xl overflow-hidden bg-cover bg-center h-full w-full"
-    style={{ backgroundImage: "url('/fishgif.gif')" }}
+    style={{ backgroundImage: "url('/goodluck.png')" }}
   />
-
-  {/* Hover Bubble */}
-<div className="absolute top-4 left-1/2 transform -translate-x-[90%] opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
-  <div className="relative bg-white text-black px-4 py-2 rounded-2xl max-w-xs text-center shadow-md border-2 border-black">
-    {bubbleMessage}
-    {/* Bubble circular tails */}
-    <div className="absolute -bottom-2 left-1/3 w-3 h-3 bg-white border-2 border-black rounded-full"></div>
-    <div className="absolute -bottom-5 left-2/5 w-2.5 h-2.5 bg-white border-2 border-black rounded-full"></div>
-    <div className="absolute -bottom-7 left-1/2 w-2 h-2 bg-white border-2 border-black rounded-full"></div>
-  </div>
-</div>
-
 </div>
 
       </div>

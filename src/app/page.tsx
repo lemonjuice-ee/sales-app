@@ -25,7 +25,7 @@ function SplashScreen() {
       <div className="relative text-center">
         {/* Logo */}
         <Image
-          src="/logo.png"
+          src="/textlogo.png"
           alt="App Logo"
           width={200}
           height={200}

@@ -33,7 +33,7 @@ const getImageForProduct = (product: Product) => {
     normalizedName.includes(key)
   );
 
-  return matchedKey ? PRODUCT_IMAGE_MAP[matchedKey] : "/logo.png";
+  return matchedKey ? PRODUCT_IMAGE_MAP[matchedKey] : "/textlogo.png";
 };
 
 export default function ProductsCards({
