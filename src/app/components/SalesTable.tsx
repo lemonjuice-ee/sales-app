@@ -531,10 +531,10 @@ if (selectedDate) {
       {/* Totals */}
       <div className="fixed bottom-4 right-4 p-4 rounded-2xl bg-white dark:bg-gray-800 shadow-lg flex gap-8 z-50">
         <p className="text-2xl font-semibold text-gray-800 dark:text-gray-100">
-          Total Sales: <span className="text-blue-600 dark:text-blue-400">{displayValue(totalSales)}</span>
+          Gross Sales: <span className="text-blue-600 dark:text-blue-400">{displayValue(totalSales)}</span>
         </p>
         <p className="text-2xl font-semibold text-gray-800 dark:text-gray-100">
-          Total Profit: <span className="text-green-600 dark:text-green-400">{displayValue(totalProfit)}</span>
+          Net Sales: <span className="text-green-600 dark:text-green-400">{displayValue(totalProfit)}</span>
         </p>
       </div>
 

@@ -170,47 +170,50 @@ const payload = {
         }}
         className="w-full max-w-7xl mx-auto bg-gray-200 dark:bg-gray-700 p-8 rounded-lg space-y-6 text-gray-800 dark:text-gray-100 shadow"
       >
-        {/* Customer Dropdown */}
-        <div>
-          <label htmlFor="customer" className="block text-xl font-semibold mb-2">
-            Customer
-          </label>
-          <select
-            id="customer"
-            value={selectedCustomer?.id || ""}
-            onChange={(e) =>
-              setSelectedCustomer(
-                customers.find((c) => c.id === Number(e.target.value)) || null
-              )
-            }
-            required
-            disabled={isEdit}
-            className="text-lg mt-1 block w-full border rounded-md p-2 bg-white dark:bg-gray-800"
-          >
-            <option value="">Select a customer</option>
-            {customers.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name}
-              </option>
-            ))}
-          </select>
-        </div>
+<div className="flex flex-col sm:flex-row gap-4">
+  {/* Customer Dropdown */}
+  <div className="flex-1">
+    <label htmlFor="customer" className="block text-xl font-semibold mb-2">
+      Customer
+    </label>
+    <select
+      id="customer"
+      value={selectedCustomer?.id || ""}
+      onChange={(e) =>
+        setSelectedCustomer(
+          customers.find((c) => c.id === Number(e.target.value)) || null
+        )
+      }
+      required
+      disabled={isEdit}
+      className="text-lg mt-1 block w-full border rounded-md p-2 bg-white dark:bg-gray-800"
+    >
+      <option value="">Select a customer</option>
+      {customers.map((c) => (
+        <option key={c.id} value={c.id}>
+          {c.name}
+        </option>
+      ))}
+    </select>
+  </div>
 
-{/* 🆕 Sale Date */}
-<div>
-  <label htmlFor="saleDate" className="block text-xl font-semibold mb-2">
-    Sale Date
-  </label>
-  <input
-    type="date"
-    id="saleDate"
-    value={saleDate}
-    onChange={(e) => setSaleDate(e.target.value)}
-    className="text-lg mt-1 block w-full border rounded-md p-2 bg-white dark:bg-gray-800"
-    required
-    max={new Date().toISOString().split("T")[0]} // 👈 prevents future dates
-  />
+  {/* Sale Date */}
+  <div className="flex-1">
+    <label htmlFor="saleDate" className="block text-xl font-semibold mb-2">
+      Sale Date
+    </label>
+    <input
+      type="date"
+      id="saleDate"
+      value={saleDate}
+      onChange={(e) => setSaleDate(e.target.value)}
+      className="text-lg mt-1 block w-full border rounded-md p-2 bg-white dark:bg-gray-800"
+      required
+      max={new Date().toISOString().split("T")[0]} // prevents future dates
+    />
+  </div>
 </div>
+
         {/* Product Tiles with Pagination */}
         {selectedCustomer && (
           <div className="space-y-6">

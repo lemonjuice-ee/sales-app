@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Image from "next/image";
 import { toast } from "react-hot-toast";
-import { Home, Users, Box, CreditCard, CheckCircle} from "lucide-react"
+import { Home, Users, Box, CreditCard, CheckCircle, ChartNoAxesCombined, ChartArea} from "lucide-react"
 
 
 import ConfirmationModal from "./components/ConfirmartionModal";
@@ -16,6 +16,7 @@ import DashboardPage from "./components/DashboardPage";
 import ThemeToggle from "./components/ThemeToggle";
 import SalesTable from "./components/SalesTable";
 import NewSaleForm from "./components/NewSaleForm";
+import AnalyticsPage from "./components/AnalyticsPage";
 
 
 
@@ -25,7 +26,7 @@ function SplashScreen() {
       <div className="relative text-center">
         {/* Logo */}
         <Image
-          src="/textlogo.png"
+          src="/logo.png"
           alt="App Logo"
           width={200}
           height={200}
@@ -136,7 +137,7 @@ const [isLoading, setIsLoading] = useState(true);
   const [confirmAction, setConfirmAction] = useState<() => void>(() => {});
 
 const [activeView, setActiveView] = useState<
-  "dashboard" | "sales" | "customers" | "products" | "users"
+  "dashboard" | "sales" | "customers" | "products" | "analytics"
 >("dashboard");
 
 useEffect(() => {
@@ -549,10 +550,13 @@ onDelete={(id) => {
           />
         );
 
-      case "users":
+      case "analytics":
         return (
-          <div className="overflow-x-auto">
-          </div>
+<div className="overflow-x-auto">
+
+<AnalyticsPage/>
+
+</div>
         );
 
     }
@@ -603,7 +607,7 @@ onDelete={(id) => {
   { view: "sales", label: "Sales", icon: <CreditCard className="mr-3" /> },
   { view: "customers", label: "Customers", icon: <Users className="mr-3" /> },
   { view: "products", label: "Products", icon: <Box className="mr-3" /> },
-  { view: "users", label: "Users", icon: <Users className="mr-3" /> },
+  { view: "analytics", label: "Analytics", icon: <ChartNoAxesCombined className="mr-3" /> },
 ].map(({ view, label, icon }) => (
   <button
     key={view}
